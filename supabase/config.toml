@@ -1,0 +1,20 @@
+project_id = "tai-chinh-ca-nhan"
+
+[api]
+enabled = true
+port = 54321
+schemas = ["public", "graphql_public"]
+
+[db]
+port = 54322
+major_version = 17
+
+[auth]
+enabled = true
+site_url = "vn.personalfinance://login-callback"
+
+[functions.sepay-webhook]
+verify_jwt = false
+
+[functions.sepay-sync]
+verify_jwt = true

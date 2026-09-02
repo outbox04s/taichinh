@@ -1,0 +1,10 @@
+import {assertEquals,assertFalse,assertRejects} from "https://deno.land/std@0.224.0/assert/mod.ts";
+import {hmacSignature,parseWebhookPayload,verifyHmac} from "./sepay.ts";
+const raw=JSON.stringify({id:92704,gateway:"Vietcombank",transactionDate:"2026-09-02 11:08:33",accountNumber:"1017588888",content:"chuyen tien",transferType:"in",transferAmount:10000,referenceCode:"FT1"});
+Deno.test("valid HMAC signature",async()=>{const signature=await hmacSignature("secret","1000",raw);assertEquals(await verifyHmac("secret","1000",signature,raw,1000),true);});
+Deno.test("wrong HMAC signature",async()=>assertFalse(await verifyHmac("secret","1000","sha256="+"0".repeat(64),raw,1000)));
+Deno.test("missing HMAC signature",async()=>assertFalse(await verifyHmac("secret","1000",null,raw,1000)));
+Deno.test("expired timestamp",async()=>{const signature=await hmacSignature("secret","1000",raw);assertFalse(await verifyHmac("secret","1000",signature,raw,1301));});
+Deno.test("valid incoming payload",()=>assertEquals(parseWebhookPayload(raw).transferType,"in"));
+Deno.test("valid outgoing payload",()=>assertEquals(parseWebhookPayload(raw.replace('"in"','"out"')).transferType,"out"));
+Deno.test("invalid payload",()=>assertRejects(async()=>parseWebhookPayload('{"id":1}')));
