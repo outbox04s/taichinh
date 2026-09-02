@@ -1,5 +1,6 @@
 package vn.personalfinance.presentation
 
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.AccountBalanceWallet
@@ -14,8 +15,12 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.*
 import vn.personalfinance.domain.repository.TransactionEdits
@@ -34,13 +39,23 @@ private val destinations=listOf(
 @Composable fun FinanceApp(viewModel:FinanceViewModel=hiltViewModel()){
  val nav=rememberNavController();val backStack by nav.currentBackStackEntryAsState();val state by viewModel.uiState.collectAsStateWithLifecycle();val mainRoute=backStack?.destination?.route in destinations.map{it.route}
  val uriHandler=LocalUriHandler.current
+ val lifecycleOwner=LocalLifecycleOwner.current
+ DisposableEffect(lifecycleOwner){
+  val observer=LifecycleEventObserver{_,event->if(event==Lifecycle.Event.ON_START)viewModel.checkForUpdate()}
+  lifecycleOwner.lifecycle.addObserver(observer)
+  onDispose{lifecycleOwner.lifecycle.removeObserver(observer)}
+ }
  state.availableUpdate?.let{release->AlertDialog(
   onDismissRequest=viewModel::dismissUpdate,
   icon={Icon(Icons.Rounded.CloudDownload,contentDescription=null)},
-  title={Text("Có phiên bản ${release.versionName}")},
-  text={Text(release.releaseNotes.ifBlank{"Phiên bản mới đã sẵn sàng với các cải tiến và sửa lỗi."})},
-  confirmButton={Button(onClick={uriHandler.openUri(release.apkUrl)}){Text("Tải bản cập nhật")}},
-  dismissButton=if(!release.mandatory){{TextButton(onClick=viewModel::dismissUpdate){Text("Để sau")}}}else null,
+  title={Text("Cập nhật ${release.versionName}")},
+  text={Column(verticalArrangement=androidx.compose.foundation.layout.Arrangement.spacedBy(10.dp)){
+   Text("Mã cập nhật: ${release.versionCode}",style=MaterialTheme.typography.labelLarge,color=MaterialTheme.colorScheme.primary)
+   Text("Nội dung cập nhật",style=MaterialTheme.typography.titleSmall)
+   Text(release.releaseNotes.ifBlank{"Phiên bản mới đã sẵn sàng với các cải tiến và sửa lỗi."})
+  }},
+  confirmButton={Button(onClick={uriHandler.openUri(release.apkUrl)}){Text("UPDATE")}},
+  dismissButton=if(!release.mandatory){{TextButton(onClick=viewModel::dismissUpdate){Text("Hủy bỏ")}}}else null,
  )}
  Scaffold(bottomBar={if(mainRoute)NavigationBar{destinations.forEach{item->
   val selected=backStack?.destination?.route==item.route
