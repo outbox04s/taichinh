@@ -2,6 +2,7 @@ package vn.personalfinance.presentation
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.AccountBalanceWallet
 import androidx.compose.material.icons.rounded.BarChart
@@ -14,7 +15,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -38,7 +38,6 @@ private val destinations=listOf(
 
 @Composable fun FinanceApp(viewModel:FinanceViewModel=hiltViewModel()){
  val nav=rememberNavController();val backStack by nav.currentBackStackEntryAsState();val state by viewModel.uiState.collectAsStateWithLifecycle();val mainRoute=backStack?.destination?.route in destinations.map{it.route}
- val uriHandler=LocalUriHandler.current
  val lifecycleOwner=LocalLifecycleOwner.current
  DisposableEffect(lifecycleOwner){
   val observer=LifecycleEventObserver{_,event->if(event==Lifecycle.Event.ON_START)viewModel.checkForUpdate()}
@@ -53,8 +52,9 @@ private val destinations=listOf(
    Text("Mã cập nhật: ${release.versionCode}",style=MaterialTheme.typography.labelLarge,color=MaterialTheme.colorScheme.primary)
    Text("Nội dung cập nhật",style=MaterialTheme.typography.titleSmall)
    Text(release.releaseNotes.ifBlank{"Phiên bản mới đã sẵn sàng với các cải tiến và sửa lỗi."})
+   state.updateError?.let{Text(it,color=MaterialTheme.colorScheme.error,style=MaterialTheme.typography.bodySmall)}
   }},
-  confirmButton={Button(onClick={uriHandler.openUri(release.apkUrl)}){Text("UPDATE")}},
+  confirmButton={Button(onClick=viewModel::installUpdate,enabled=!state.updateInstalling){if(state.updateInstalling)CircularProgressIndicator(Modifier.size(18.dp),strokeWidth=2.dp) else Text("UPDATE")}},
   dismissButton=if(!release.mandatory){{TextButton(onClick=viewModel::dismissUpdate){Text("Hủy bỏ")}}}else null,
  )}
  Scaffold(bottomBar={if(mainRoute)NavigationBar{destinations.forEach{item->

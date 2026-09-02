@@ -12,6 +12,8 @@ import kotlinx.coroutines.launch
 import vn.personalfinance.domain.model.*
 import vn.personalfinance.domain.repository.*
 import vn.personalfinance.BuildConfig
+import vn.personalfinance.data.update.AppUpdateInstaller
+import vn.personalfinance.data.update.UpdateInstallResult
 import java.time.Instant
 import java.time.LocalDate
 import javax.inject.Inject
@@ -22,11 +24,11 @@ data class FinanceUiState(
     val loading:Boolean=true,val saving:Boolean=false,val error:String?=null,val snapshot:FinanceSnapshot=FinanceSnapshot(),
     val period:PeriodFilter=PeriodFilter.MONTH,val customStart:LocalDate?=null,val customEnd:LocalDate?=null,val accountId:String?=null,
     val search:String="",val transactionType:TransactionType?=null,val source:TransactionSource?=null,val categoryId:String?=null,val debtSort:DebtSort=DebtSort.DUE_DATE,val lastSePaySync:Instant?=null,
-    val availableUpdate:AppRelease?=null,
+    val availableUpdate:AppRelease?=null,val updateInstalling:Boolean=false,val updateError:String?=null,
 )
 
 @HiltViewModel
-class FinanceViewModel @Inject constructor(private val repository:FinanceRepository):ViewModel(){
+class FinanceViewModel @Inject constructor(private val repository:FinanceRepository,private val updateInstaller:AppUpdateInstaller):ViewModel(){
     private val local=MutableStateFlow(FinanceUiState())
     val uiState:StateFlow<FinanceUiState> = combine(local,repository.snapshot){state,data->state.copy(snapshot=data)}
         .stateIn(viewModelScope,SharingStarted.WhileSubscribed(5_000),local.value)
@@ -55,6 +57,13 @@ class FinanceViewModel @Inject constructor(private val repository:FinanceReposit
     fun reconcileSePay()=mutate(onDone={local.value=local.value.copy(lastSePaySync=Instant.now())}){repository.reconcileSePay()}
     fun checkForUpdate()=viewModelScope.launch{repository.latestAppRelease().onSuccess{release->local.value=local.value.copy(availableUpdate=release?.takeIf{it.versionCode>BuildConfig.VERSION_CODE})}}
     fun dismissUpdate(){if(local.value.availableUpdate?.mandatory!=true)local.value=local.value.copy(availableUpdate=null)}
+    fun installUpdate(){val release=local.value.availableUpdate?:return;viewModelScope.launch{
+        local.value=local.value.copy(updateInstalling=true,updateError=null)
+        runCatching{updateInstaller.install(release.apkUrl,release.versionCode)}.fold(
+            {result->local.value=local.value.copy(updateInstalling=false,updateError=if(result==UpdateInstallResult.PermissionRequired)"Hãy bật Cho phép từ nguồn này, quay lại app rồi nhấn UPDATE lần nữa." else null)},
+            {failure->local.value=local.value.copy(updateInstalling=false,updateError=failure.message?:"Không thể chuẩn bị bản cập nhật.")}
+        )
+    }}
     private fun mutate(onDone:()->Unit={},block:suspend()->Result<Unit>)=viewModelScope.launch{local.value=local.value.copy(saving=true,error=null);block().fold({local.value=local.value.copy(saving=false);onDone()},{local.value=local.value.copy(saving=false,error=it.userMessage())})}
     private fun update(block:FinanceUiState.()->FinanceUiState){local.value=local.value.block()}
     private fun Throwable.userMessage():String {
