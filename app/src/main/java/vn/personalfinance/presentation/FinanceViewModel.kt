@@ -69,6 +69,9 @@ class FinanceViewModel @Inject constructor(private val repository:FinanceReposit
     private fun Throwable.userMessage():String {
         val detail=message.orEmpty()
         return when {
+            detail.contains("Expected payment must exceed period interest",true) -> "Số tiền trả mỗi kỳ phải lớn hơn tiền lãi phát sinh trong kỳ."
+            detail.contains("Invalid debt amount",true) -> "Thông tin số tiền khoản nợ không hợp lệ."
+            detail.contains("duplicate key",true) && detail.contains("debt_installments",true) -> "Lịch trả đang có hai kỳ trùng ngày. Vui lòng kiểm tra chu kỳ và ngày đáo hạn."
             detail.contains("NOT_FOUND",true) && detail.contains("sepay-sync",true) -> "Tính năng đồng bộ SePay chưa được kích hoạt. Vui lòng triển khai Edge Function rồi thử lại."
             detail.contains("PGRST205",true) || detail.contains("schema cache",true) -> "Cơ sở dữ liệu chưa được cập nhật đầy đủ. Vui lòng chạy migration Supabase rồi thử lại."
             detail.contains("network",true) || detail.contains("Unable to resolve host",true) -> "Không thể kết nối mạng. Vui lòng kiểm tra Internet rồi thử lại."
