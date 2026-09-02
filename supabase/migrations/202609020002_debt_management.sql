@@ -1,5 +1,11 @@
 begin;
 
+-- Required by the tenant-safe composite foreign keys below. The primary key
+-- already guarantees id uniqueness; this constraint additionally lets
+-- PostgreSQL validate that referenced rows belong to the same user.
+alter table public.debt_installments
+  add constraint debt_installments_id_user_id_key unique (id,user_id);
+
 create table public.debt_payment_allocations (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references auth.users(id) on delete cascade,
