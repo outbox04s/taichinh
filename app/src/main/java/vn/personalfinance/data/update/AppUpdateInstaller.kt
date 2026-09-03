@@ -6,6 +6,7 @@ import android.content.Intent
 import android.content.pm.PackageInstaller
 import android.content.pm.PackageManager
 import android.net.Uri
+import android.os.Build
 import android.provider.Settings
 import androidx.core.content.pm.PackageInfoCompat
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -53,13 +54,21 @@ class AppUpdateInstaller @Inject constructor(@ApplicationContext private val con
     }
 
     private fun verify(apk:File,expectedVersion:Long){
-        val flags=PackageManager.PackageInfoFlags.of(PackageManager.GET_SIGNING_CERTIFICATES.toLong())
-        val archive=requireNotNull(context.packageManager.getPackageArchiveInfo(apk.path,flags)){"Không đọc được APK cập nhật"}
+        @Suppress("DEPRECATION")
+        val archive=if(Build.VERSION.SDK_INT>=Build.VERSION_CODES.TIRAMISU){
+            context.packageManager.getPackageArchiveInfo(apk.path,PackageManager.PackageInfoFlags.of(PackageManager.GET_SIGNING_CERTIFICATES.toLong()))
+        }else context.packageManager.getPackageArchiveInfo(apk.path,PackageManager.GET_SIGNATURES)
+        requireNotNull(archive){"Không đọc được APK cập nhật"}
         require(archive.packageName==context.packageName){"APK không thuộc ứng dụng này"}
         require(PackageInfoCompat.getLongVersionCode(archive)==expectedVersion){"Mã phiên bản APK không khớp"}
-        val installed=context.packageManager.getPackageInfo(context.packageName,flags)
-        val expected=requireNotNull(installed.signingInfo).apkContentsSigners.map{sha256(it.toByteArray())}.toSet()
-        val actual=requireNotNull(archive.signingInfo).apkContentsSigners.map{sha256(it.toByteArray())}.toSet()
+        @Suppress("DEPRECATION")
+        val installed=if(Build.VERSION.SDK_INT>=Build.VERSION_CODES.TIRAMISU){
+            context.packageManager.getPackageInfo(context.packageName,PackageManager.PackageInfoFlags.of(PackageManager.GET_SIGNING_CERTIFICATES.toLong()))
+        }else context.packageManager.getPackageInfo(context.packageName,PackageManager.GET_SIGNATURES)
+        @Suppress("DEPRECATION")
+        val expected=if(Build.VERSION.SDK_INT>=Build.VERSION_CODES.P) requireNotNull(installed.signingInfo).apkContentsSigners.map{sha256(it.toByteArray())}.toSet() else installed.signatures.orEmpty().map{sha256(it.toByteArray())}.toSet()
+        @Suppress("DEPRECATION")
+        val actual=if(Build.VERSION.SDK_INT>=Build.VERSION_CODES.P) requireNotNull(archive.signingInfo).apkContentsSigners.map{sha256(it.toByteArray())}.toSet() else archive.signatures.orEmpty().map{sha256(it.toByteArray())}.toSet()
         require(expected==actual){"Chữ ký APK cập nhật không hợp lệ"}
     }
 
@@ -69,7 +78,7 @@ class AppUpdateInstaller @Inject constructor(@ApplicationContext private val con
         val installer=context.packageManager.packageInstaller
         val params=PackageInstaller.SessionParams(PackageInstaller.SessionParams.MODE_FULL_INSTALL).apply{
             setAppPackageName(context.packageName)
-            setRequireUserAction(PackageInstaller.SessionParams.USER_ACTION_REQUIRED)
+            if(Build.VERSION.SDK_INT>=Build.VERSION_CODES.S)setRequireUserAction(PackageInstaller.SessionParams.USER_ACTION_REQUIRED)
         }
         val sessionId=installer.createSession(params)
         installer.openSession(sessionId).use{session->

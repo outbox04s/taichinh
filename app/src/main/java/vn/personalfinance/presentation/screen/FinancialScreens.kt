@@ -56,7 +56,7 @@ private val positive=Color(0xFF14805E); private val negative=Color(0xFFB3261E)
  }
 }
 
-@Composable fun OverviewScreen(state:FinanceUiState,onRetry:()->Unit,onPeriod:(PeriodFilter)->Unit,onAccount:(String?)->Unit,onCustom:(LocalDate,LocalDate)->Unit,onAddIncome:(IncomeSourceInput)->Unit,onLinkIncome:(String,String,Long)->Unit){
+@Composable private fun LegacyOverviewScreen(state:FinanceUiState,onRetry:()->Unit,onPeriod:(PeriodFilter)->Unit,onAccount:(String?)->Unit,onCustom:(LocalDate,LocalDate)->Unit,onAddIncome:(IncomeSourceInput)->Unit,onLinkIncome:(String,String,Long)->Unit){
     val range=state.dateRange();val tx=state.snapshot.transactions.filter{state.accountId==null||it.accountId==state.accountId}
     val flow=FinanceCalculator.cashFlow(tx,range.first,range.second,VietnamZone);val assets=FinanceCalculator.totalAssets(state.snapshot.accounts)
     val debt=state.snapshot.debts.filter{it.status!="paid"}.sumOf{it.currentPrincipal};val today=LocalDate.now(VietnamZone)
