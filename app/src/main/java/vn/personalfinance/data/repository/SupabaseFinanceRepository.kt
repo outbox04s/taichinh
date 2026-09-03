@@ -45,8 +45,14 @@ import javax.inject.Singleton
 @Singleton
 class SupabaseFinanceRepository @Inject constructor(private val client: SupabaseClient) : FinanceRepository {
     private val mutex=Mutex(); private val _snapshot=MutableStateFlow(FinanceSnapshot()); override val snapshot:StateFlow<FinanceSnapshot> = _snapshot.asStateFlow()
-    private fun userId()=requireNotNull(client.auth.currentUserOrNull()?.id){"Phiên đăng nhập đã hết hạn"}
-    override suspend fun refresh():Result<Unit> = runCatching { mutex.withLock { coroutineScope {
+    private suspend fun userId():String {
+        client.auth.awaitInitialization()
+        if(client.auth.currentUserOrNull()==null) client.auth.signInAnonymously()
+        return requireNotNull(client.auth.currentUserOrNull()?.id){"Không thể khởi tạo phiên sử dụng"}
+    }
+    override suspend fun refresh():Result<Unit> = runCatching { mutex.withLock {
+        userId()
+        coroutineScope {
         val values=listOf(
             async { client.from("financial_accounts").select().decodeList<AccountDto>() }, async { client.from("categories").select().decodeList<CategoryDto>() },
             async { client.from("transactions").select().decodeList<TransactionDto>() }, async { client.from("budgets").select().decodeList<BudgetDto>() },

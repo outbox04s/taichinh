@@ -23,7 +23,13 @@ object AppModule {
             "Thiếu SUPABASE_URL hoặc SUPABASE_ANON_KEY trong local.properties"
         }
         return createSupabaseClient(BuildConfig.SUPABASE_URL, BuildConfig.SUPABASE_ANON_KEY) {
-            install(Auth); install(Postgrest); install(Functions)
+            install(Auth) {
+                autoLoadFromStorage = true
+                autoSaveToStorage = true
+                alwaysAutoRefresh = true
+            }
+            install(Postgrest)
+            install(Functions)
         }
     }
 

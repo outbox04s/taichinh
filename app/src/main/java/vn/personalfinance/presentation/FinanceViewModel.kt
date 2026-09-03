@@ -73,12 +73,17 @@ class FinanceViewModel @Inject constructor(private val repository:FinanceReposit
         return when {
             detail.contains("Expected payment must exceed period interest",true) -> "Số tiền trả mỗi kỳ phải lớn hơn tiền lãi phát sinh trong kỳ."
             detail.contains("Invalid debt amount",true) -> "Thông tin số tiền khoản nợ không hợp lệ."
+            detail.contains("Monthly amount and remaining months",true) -> "Số tiền mỗi kỳ × số kỳ còn lại chưa đủ tổng tiền phải trả."
+            detail.contains("Receive account is required",true) -> "Hãy chọn một tài khoản đang hoạt động để nhận tiền vay."
             detail.contains("duplicate key",true) && detail.contains("debt_installments",true) -> "Lịch trả đang có hai kỳ trùng ngày. Vui lòng kiểm tra chu kỳ và ngày đáo hạn."
             detail.contains("NOT_FOUND",true) && detail.contains("sepay-sync",true) -> "Tính năng đồng bộ SePay chưa được kích hoạt. Vui lòng triển khai Edge Function rồi thử lại."
             detail.contains("PGRST205",true) || detail.contains("schema cache",true) -> "Cơ sở dữ liệu chưa được cập nhật đầy đủ. Vui lòng chạy migration Supabase rồi thử lại."
             detail.contains("network",true) || detail.contains("Unable to resolve host",true) -> "Không thể kết nối mạng. Vui lòng kiểm tra Internet rồi thử lại."
-            detail.contains("Phiên",true) || detail.contains("JWT",true) || detail.contains("unauthorized",true) -> "Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại."
-            else -> "Đã xảy ra lỗi khi xử lý dữ liệu. Vui lòng thử lại sau."
+            detail.contains("anonymous",true) && (detail.contains("disabled",true) || detail.contains("not enabled",true)) -> "Supabase chưa bật đăng nhập ẩn danh. Vui lòng bật Anonymous Sign-ins trong Authentication rồi thử lại."
+            detail.contains("Phiên",true) || detail.contains("JWT",true) || detail.contains("unauthorized",true) || detail.contains("Authentication required",true) -> "Không thể xác thực phiên sử dụng. Hãy kiểm tra kết nối rồi nhấn Thử lại."
+            else -> detail.lineSequence().firstOrNull{it.isNotBlank()}?.take(180)
+                ?.let{"Không thể lưu dữ liệu: $it"}
+                ?: "Đã xảy ra lỗi khi xử lý dữ liệu. Vui lòng thử lại sau."
         }
     }
 }
