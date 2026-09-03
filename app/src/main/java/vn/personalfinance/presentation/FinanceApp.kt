@@ -2,6 +2,8 @@ package vn.personalfinance.presentation
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.*
 import androidx.compose.material3.*
@@ -71,27 +73,30 @@ fun FinanceApp(viewModel: FinanceViewModel = hiltViewModel()) {
             composable("transactions") { TransactionsScreen(state, viewModel::refresh, viewModel::setSearch, viewModel::setType, viewModel::setSource, viewModel::setAccount, viewModel::setCategory, { id, status -> val old = state.snapshot.transactions.first { it.id == id }; viewModel.editTransaction(id, TransactionEdits(old.categoryId, old.note, status)) }, viewModel::deleteTransaction, { nav.navigate("transaction/transfer") }) { nav.navigate("transaction/new") } }
             composable("transaction/new") { TransactionFormScreen(state.snapshot, state.saving, state.error, { input -> viewModel.addTransaction(input) { nav.popBackStack() } }) { nav.popBackStack() } }
             composable("transaction/transfer") { TransferFormScreen(state.snapshot.accounts, state.saving, state.error, { from, to, amount, note -> viewModel.transfer(from, to, amount, note) { nav.popBackStack() } }) { nav.popBackStack() } }
-            composable("budgets") { BudgetsScreen(state, viewModel::refresh, viewModel::addBudget) }
+            composable("budgets") { AccountsScreen(state, viewModel::refresh, viewModel::addAccount) }
             composable("debts") { DebtListScreen(state, viewModel::refresh, viewModel::setDebtSort, { nav.navigate("debt/new") }) { nav.navigate("debt/$it") } }
-            composable("debt/new") { CreateDebtScreen(state.saving, state.error, { nav.popBackStack() }) { input -> viewModel.addDebt(input) { id -> nav.navigate("debt/$id") { popUpTo("debts") } } } }
+            composable("debt/new") { CreateDebtScreen(state.snapshot.accounts, state.saving, state.error, { nav.popBackStack() }) { input -> viewModel.addDebt(input) { id -> nav.navigate("debt/$id") { popUpTo("debts") } } } }
             composable("debt/{id}") { entry -> val id = entry.arguments?.getString("id"); DebtDetailScreen(state.snapshot.debts.firstOrNull { it.id == id }, state.snapshot, { nav.popBackStack() }, viewModel::payDebt, viewModel::reverseDebtPayment, viewModel::settleDebt, viewModel::updateInstallment) }
             composable("reports") { PlaceholderScreen("Báo cáo") }
-            composable("settings") { SettingsScreen(state, viewModel::reconcileSePay) { id, category -> val old = state.snapshot.transactions.first { it.id == id }; viewModel.editTransaction(id, TransactionEdits(category, old.note, old.status)) } }
+            composable("settings") { SettingsScreen(state, viewModel::reconcileSePay, { id, category -> val old = state.snapshot.transactions.first { it.id == id }; viewModel.editTransaction(id, TransactionEdits(category, old.note, old.status)) }, viewModel::addCategory) }
         }
     }
 }
 
 @Composable
 private fun GlassBottomNavigation(items: List<Destination>, route: String?, onSelect: (Destination) -> Unit) {
-    Box(Modifier.fillMaxWidth().navigationBarsPadding().padding(horizontal = 14.dp, vertical = 10.dp), contentAlignment = Alignment.Center) {
-        LiquidGlassSurface(Modifier.fillMaxWidth().height(72.dp), GlassLevel.Primary) {
-            Row(Modifier.fillMaxWidth().padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
+    Box(Modifier.fillMaxWidth().navigationBarsPadding().padding(horizontal = 14.dp, vertical = 8.dp).height(86.dp), contentAlignment = Alignment.BottomCenter) {
+        LiquidGlassSurface(Modifier.fillMaxWidth().height(66.dp), GlassLevel.Primary) {
+            Row(Modifier.fillMaxWidth().padding(horizontal = 8.dp), verticalAlignment = Alignment.CenterVertically) {
                 items.forEach { item ->
                     val selected = route == item.route
-                    Surface(onClick = { onSelect(item) }, modifier = Modifier.weight(if (selected) 1.45f else 1f).height(56.dp), shape = CircleShape, color = if (selected) LiquidGlassColors.Mint.copy(alpha = .18f) else Color.Transparent) {
-                        Row(Modifier.padding(horizontal = if (selected) 12.dp else 8.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center) {
-                            Icon(item.icon, item.label, tint = if (selected) LiquidGlassColors.Mint else LiquidGlassColors.TextSecondary)
-                            if (selected) { Spacer(Modifier.width(6.dp)); Text(item.label, color = LiquidGlassColors.TextPrimary, maxLines = 1, overflow = TextOverflow.Ellipsis, style = MaterialTheme.typography.labelMedium) }
+                    val offset by animateDpAsState(if(selected) (-10).dp else 0.dp, tween(260), label="menuDepth")
+                    Box(Modifier.weight(1f).fillMaxHeight(), contentAlignment = Alignment.Center) {
+                        Column(Modifier.offset(y=offset), horizontalAlignment = Alignment.CenterHorizontally) {
+                            Surface(onClick = { onSelect(item) }, modifier = Modifier.size(if(selected)58.dp else 48.dp), shape = CircleShape, color = if(selected) Color.White else Color.Transparent, border = if(selected) androidx.compose.foundation.BorderStroke(1.5.dp, LiquidGlassColors.Blue.copy(alpha=.35f)) else null, shadowElevation = if(selected)12.dp else 0.dp) {
+                                Box(contentAlignment=Alignment.Center){Icon(item.icon,item.label,tint=if(selected)LiquidGlassColors.Blue else LiquidGlassColors.TextSecondary,modifier=Modifier.size(if(selected)27.dp else 24.dp))}
+                            }
+                            if(selected) Text(item.label.uppercase(), color=LiquidGlassColors.Blue, maxLines=1, overflow=TextOverflow.Ellipsis, style=MaterialTheme.typography.labelSmall, fontWeight=androidx.compose.ui.text.font.FontWeight.Bold)
                         }
                     }
                 }

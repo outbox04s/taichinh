@@ -72,11 +72,11 @@ fun OverviewScreen(
 }
 
 @Composable private fun DashboardBackground(content: @Composable BoxScope.() -> Unit) {
-    Box(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(LiquidGlassColors.Background, LiquidGlassColors.BackgroundSecondary, LiquidGlassColors.Background)))) {
+    Box(Modifier.fillMaxSize().background(Brush.linearGradient(listOf(Color.White, LiquidGlassColors.BackgroundSecondary, Color.White)))) {
         Canvas(Modifier.matchParentSize()) {
-            drawCircle(LiquidGlassColors.Mint.copy(alpha = .10f), size.minDimension * .42f, Offset(size.width * .92f, size.height * .08f))
-            drawCircle(LiquidGlassColors.Violet.copy(alpha = .075f), size.minDimension * .38f, Offset(size.width * .04f, size.height * .42f))
-            drawCircle(LiquidGlassColors.Blue.copy(alpha = .055f), size.minDimension * .45f, Offset(size.width * .85f, size.height * .88f))
+            drawCircle(LiquidGlassColors.BlueBright.copy(alpha = .12f), size.minDimension * .42f, Offset(size.width * .92f, size.height * .08f))
+            drawCircle(LiquidGlassColors.Blue.copy(alpha = .08f), size.minDimension * .38f, Offset(size.width * .04f, size.height * .42f))
+            drawCircle(LiquidGlassColors.BlueBright.copy(alpha = .07f), size.minDimension * .45f, Offset(size.width * .85f, size.height * .88f))
         }
         content()
     }
@@ -137,7 +137,7 @@ fun OverviewScreen(
 @Composable private fun DashboardHeader(onSettings: () -> Unit) {
     val hour = java.time.LocalTime.now(VietnamZone).hour
     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-        Column(Modifier.weight(1f)) { Text(when (hour) { in 5..10 -> "Chào buổi sáng"; in 11..17 -> "Chào buổi chiều"; else -> "Chào buổi tối" }, color = LiquidGlassColors.TextSecondary, fontSize = 13.sp); Text("Tổng quan tài chính", color = LiquidGlassColors.TextPrimary, fontSize = 28.sp, fontWeight = FontWeight.SemiBold, maxLines = 1) }
+        Column(Modifier.weight(1f)) { Text(when (hour) { in 5..10 -> "CHÀO BUỔI SÁNG"; in 11..17 -> "CHÀO BUỔI CHIỀU"; else -> "CHÀO BUỔI TỐI" }, color = LiquidGlassColors.TextSecondary, fontSize = 12.sp, fontWeight = FontWeight.Medium); Text("TỔNG QUAN TÀI CHÍNH", color = LiquidGlassColors.TextPrimary, fontSize = 25.sp, fontWeight = FontWeight.Bold, maxLines = 1) }
         GlassIconButton(Icons.Rounded.NotificationsNone, "Thông báo", {})
         Spacer(Modifier.width(8.dp)); GlassIconButton(Icons.Rounded.Settings, "Mở cài đặt", onSettings)
     }
@@ -145,9 +145,9 @@ fun OverviewScreen(
 
 @Composable private fun BalanceHeroCard(value: Long, visible: Boolean, onVisibility: () -> Unit, account: String, onAccount: () -> Unit) {
     LiquidGlassSurface(Modifier.fillMaxWidth(), GlassLevel.Primary) {
-        Canvas(Modifier.matchParentSize()) { drawCircle(Brush.radialGradient(listOf(LiquidGlassColors.Mint.copy(alpha = .28f), Color.Transparent)), size.minDimension * .75f, Offset(size.width, 0f)) }
+        Canvas(Modifier.matchParentSize()) { drawCircle(Brush.radialGradient(listOf(LiquidGlassColors.BlueBright.copy(alpha = .20f), Color.Transparent)), size.minDimension * .75f, Offset(size.width, 0f)) }
         Column(Modifier.padding(22.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) { Text("Tổng tài sản khả dụng", Modifier.weight(1f), color = LiquidGlassColors.TextSecondary); IconButton(onVisibility) { Icon(if (visible) Icons.Rounded.Visibility else Icons.Rounded.VisibilityOff, if (visible) "Ẩn số tiền" else "Hiện số tiền", tint = LiquidGlassColors.TextPrimary) } }
+            Row(verticalAlignment = Alignment.CenterVertically) { Text("TỔNG TÀI SẢN KHẢ DỤNG", Modifier.weight(1f), color = LiquidGlassColors.TextSecondary, fontWeight = FontWeight.SemiBold); IconButton(onVisibility) { Icon(if (visible) Icons.Rounded.Visibility else Icons.Rounded.VisibilityOff, if (visible) "Ẩn số tiền" else "Hiện số tiền", tint = LiquidGlassColors.Blue) } }
             AnimatedContent(visible, label = "money") { shown -> Text(if (shown) value.toVnd() else "••••••••", color = LiquidGlassColors.TextPrimary, fontSize = 36.sp, lineHeight = 42.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis) }
             Row(verticalAlignment = Alignment.CenterVertically) { GlassChip(account, false, onAccount); if (value == 0L) Text("Thêm tài khoản đầu tiên", Modifier.padding(start = 12.dp), color = LiquidGlassColors.Mint, style = MaterialTheme.typography.labelMedium) }
         }
@@ -164,7 +164,7 @@ fun OverviewScreen(
 @Composable private fun MetricCard(label: String, value: Long, icon: ImageVector, color: Color, visible: Boolean, modifier: Modifier) {
     GlassCard(modifier.heightIn(min = 126.dp), GlassLevel.Tertiary) {
         Surface(shape = CircleShape, color = color.copy(alpha = .14f)) { Icon(icon, null, Modifier.padding(8.dp).size(20.dp), tint = color) }
-        Spacer(Modifier.height(10.dp)); Text(label, color = LiquidGlassColors.TextSecondary, fontSize = 13.sp, maxLines = 1)
+        Spacer(Modifier.height(10.dp)); Text(label.uppercase(Locale.forLanguageTag("vi-VN")), color = LiquidGlassColors.TextSecondary, fontSize = 12.sp, fontWeight = FontWeight.SemiBold, maxLines = 1)
         Text(if (visible) value.toVnd() else "••••••", color = LiquidGlassColors.TextPrimary, fontSize = 20.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
     }
 }
@@ -173,7 +173,7 @@ fun OverviewScreen(
     val status = when (level) { RiskLevel.SAFE -> "An toàn"; RiskLevel.ATTENTION -> "Cần chú ý"; RiskLevel.DANGEROUS -> "Nguy hiểm"; RiskLevel.INSUFFICIENT_DATA -> "Chưa đủ dữ liệu" }
     val color = when (level) { RiskLevel.SAFE -> LiquidGlassColors.Mint; RiskLevel.DANGEROUS -> LiquidGlassColors.Coral; else -> LiquidGlassColors.Amber }
     GlassCard {
-        Row(verticalAlignment = Alignment.CenterVertically) { Column(Modifier.weight(1f)) { Text("Sức khỏe tài chính", color = LiquidGlassColors.TextPrimary, fontSize = 20.sp, fontWeight = FontWeight.SemiBold); Spacer(Modifier.height(8.dp)); GlassStatusPill(status, color) }; Gauge(score ?: 0, color) }
+            Row(verticalAlignment = Alignment.CenterVertically) { Column(Modifier.weight(1f)) { Text("SỨC KHỎE TÀI CHÍNH", color = LiquidGlassColors.TextPrimary, fontSize = 20.sp, fontWeight = FontWeight.Bold); Spacer(Modifier.height(8.dp)); GlassStatusPill(status, color) }; Gauge(score ?: 0, color) }
         Spacer(Modifier.height(16.dp)); MoneyLine("Tổng dư nợ", debt); MoneyLine("Phải trả trong 7 ngày", due7); MoneyLine("Số dư dự kiến sau 30 ngày", projected)
         TextButton(onClick = onDetails, modifier = Modifier.align(Alignment.End).heightIn(min = 48.dp)) { Text("Xem phân tích", color = LiquidGlassColors.Mint); Icon(Icons.Rounded.ChevronRight, null, tint = LiquidGlassColors.Mint) }
     }
@@ -229,7 +229,7 @@ fun OverviewScreen(
 
 @Composable private fun IncomeCard(snapshot: FinanceSnapshot, onAdd: () -> Unit) { GlassCard { SectionHeader("Nguồn thu nhập", if (snapshot.incomeSources.isNotEmpty()) "Thêm" else null, onAdd); val source = snapshot.incomeSources.firstOrNull { it.active }; if (source == null) GlassEmptyState(Icons.Rounded.Payments, "Chưa thiết lập nguồn thu", "Theo dõi ngày nhận và số tiền dự kiến.", "Thiết lập nguồn thu", onAdd) else { MoneyLine(source.name, source.expectedAmount); Text("Ngày nhận dự kiến: ${source.nextExpectedDate?.format(DateTimeFormatter.ofPattern("dd/MM/yyyy")) ?: "Chưa đặt"}", color = LiquidGlassColors.TextSecondary, fontSize = 13.sp); Spacer(Modifier.height(8.dp)); GlassStatusPill(if (snapshot.incomePayments.any { it.incomeSourceId == source.id && it.transactionId != null }) "Đã nhận" else "Chưa nhận", if (snapshot.incomePayments.any { it.incomeSourceId == source.id && it.transactionId != null }) LiquidGlassColors.Mint else LiquidGlassColors.Amber) } } }
 
-@Composable private fun SectionHeader(title: String, action: String? = null, onAction: () -> Unit = {}) { Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) { Text(title, Modifier.weight(1f), color = LiquidGlassColors.TextPrimary, fontSize = 20.sp, fontWeight = FontWeight.SemiBold); action?.let { TextButton(onClick = onAction, modifier = Modifier.heightIn(min = 48.dp)) { Text(it, color = LiquidGlassColors.Mint) } } } }
+@Composable private fun SectionHeader(title: String, action: String? = null, onAction: () -> Unit = {}) { Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) { Text(title.uppercase(Locale.forLanguageTag("vi-VN")), Modifier.weight(1f), color = LiquidGlassColors.TextPrimary, fontSize = 19.sp, fontWeight = FontWeight.Bold); action?.let { TextButton(onClick = onAction, modifier = Modifier.heightIn(min = 48.dp)) { Text(it, color = LiquidGlassColors.Blue) } } } }
 
 @Composable private fun CustomRangeDialog(state: FinanceUiState, onDismiss: () -> Unit, onApply: (LocalDate, LocalDate) -> Unit) { var start by remember { mutableStateOf(state.customStart?.toString() ?: LocalDate.now(VietnamZone).withDayOfMonth(1).toString()) }; var end by remember { mutableStateOf(state.customEnd?.toString() ?: LocalDate.now(VietnamZone).toString()) }; AlertDialog(onDismissRequest = onDismiss, title = { Text("Chọn khoảng thời gian") }, text = { Column(verticalArrangement = Arrangement.spacedBy(10.dp)) { DatePickerField("Từ ngày", start) { start = it }; DatePickerField("Đến ngày", end) { end = it } } }, confirmButton = { Button({ runCatching { onApply(LocalDate.parse(start), LocalDate.parse(end)) } }) { Text("Áp dụng") } }, dismissButton = { TextButton(onDismiss) { Text("Hủy") } }) }
 @Composable private fun AddIncomeDialog(onDismiss: () -> Unit, onSave: (IncomeSourceInput) -> Unit) { var name by remember { mutableStateOf("") }; var amount by remember { mutableStateOf("") }; var day by remember { mutableStateOf("") }; AlertDialog(onDismissRequest = onDismiss, title = { Text("Thêm nguồn thu nhập") }, text = { Column(verticalArrangement = Arrangement.spacedBy(8.dp)) { OutlinedTextField(name, { name = it }, label = { Text("Tên nguồn") }); OutlinedTextField(amount, { amount = it.filter(Char::isDigit) }, label = { Text("Số tiền dự kiến") }); OutlinedTextField(day, { day = it.filter(Char::isDigit).take(2) }, label = { Text("Ngày nhận (1–31)") }) } }, confirmButton = { Button({ val value = amount.toLongOrNull(); val payDay = day.toIntOrNull(); if (name.isNotBlank() && value != null && value > 0 && payDay in 1..31) { val now = LocalDate.now(VietnamZone); onSave(IncomeSourceInput(name, "salary", value, payDay, "monthly", now.withDayOfMonth(minOf(payDay!!, now.lengthOfMonth())))) } }) { Text("Lưu") } }, dismissButton = { TextButton(onDismiss) { Text("Hủy") } }) }
@@ -238,9 +238,9 @@ fun OverviewScreen(
 @Composable private fun DashboardError(message: String, onRetry: () -> Unit) { Box(Modifier.fillMaxSize().padding(24.dp), contentAlignment = Alignment.Center) { GlassCard { GlassEmptyState(Icons.Rounded.CloudOff, "Không tải được dữ liệu", message, "Thử lại", onRetry) } } }
 
 private fun sampleState(empty: Boolean = false) = FinanceUiState(loading = false, snapshot = if (empty) FinanceSnapshot() else FinanceSnapshot(accounts = listOf(FinancialAccount("1", "Tài khoản chính", "bank", 128_500_000)), categories = listOf(Category("food", "Ăn uống", TransactionType.EXPENSE)), transactions = listOf(Transaction("t1", "1", "food", TransactionType.EXPENSE, 250_000, Instant.now(), "Bữa tối", null, TransactionSource.MANUAL, TransactionStatus.CONFIRMED))))
-@Preview(name = "Dashboard có dữ liệu", showBackground = true, backgroundColor = 0xFF070A12) @Composable private fun DashboardDataPreview() { DashboardBackground { DashboardContent(sampleState(), {}, {}, { _, _ -> }, {}, {}, {}, {}, {}) } }
-@Preview(name = "Dashboard trống", showBackground = true, backgroundColor = 0xFF070A12) @Composable private fun DashboardEmptyPreview() { DashboardBackground { DashboardContent(sampleState(true), {}, {}, { _, _ -> }, {}, {}, {}, {}, {}) } }
-@Preview(name = "Dashboard loading", showBackground = true, backgroundColor = 0xFF070A12) @Composable private fun DashboardLoadingPreview() { DashboardBackground { DashboardLoading() } }
-@Preview(name = "Dashboard lỗi", showBackground = true, backgroundColor = 0xFF070A12) @Composable private fun DashboardErrorPreview() { DashboardBackground { DashboardError("Không thể kết nối. Vui lòng thử lại.", {}) } }
-@Preview(name = "Màn hình nhỏ", widthDp = 320, heightDp = 700, showBackground = true, backgroundColor = 0xFF070A12) @Composable private fun DashboardSmallPreview() { DashboardBackground { DashboardContent(sampleState(), {}, {}, { _, _ -> }, {}, {}, {}, {}, {}) } }
-@Preview(name = "Font lớn", fontScale = 1.5f, widthDp = 390, heightDp = 844, showBackground = true, backgroundColor = 0xFF070A12) @Composable private fun DashboardLargeFontPreview() { DashboardBackground { DashboardContent(sampleState(), {}, {}, { _, _ -> }, {}, {}, {}, {}, {}) } }
+@Preview(name = "Dashboard có dữ liệu", showBackground = true, backgroundColor = 0xFFF8FBFF) @Composable private fun DashboardDataPreview() { DashboardBackground { DashboardContent(sampleState(), {}, {}, { _, _ -> }, {}, {}, {}, {}, {}) } }
+@Preview(name = "Dashboard trống", showBackground = true, backgroundColor = 0xFFF8FBFF) @Composable private fun DashboardEmptyPreview() { DashboardBackground { DashboardContent(sampleState(true), {}, {}, { _, _ -> }, {}, {}, {}, {}, {}) } }
+@Preview(name = "Dashboard loading", showBackground = true, backgroundColor = 0xFFF8FBFF) @Composable private fun DashboardLoadingPreview() { DashboardBackground { DashboardLoading() } }
+@Preview(name = "Dashboard lỗi", showBackground = true, backgroundColor = 0xFFF8FBFF) @Composable private fun DashboardErrorPreview() { DashboardBackground { DashboardError("Không thể kết nối. Vui lòng thử lại.", {}) } }
+@Preview(name = "Màn hình nhỏ", widthDp = 320, heightDp = 700, showBackground = true, backgroundColor = 0xFFF8FBFF) @Composable private fun DashboardSmallPreview() { DashboardBackground { DashboardContent(sampleState(), {}, {}, { _, _ -> }, {}, {}, {}, {}, {}) } }
+@Preview(name = "Font lớn", fontScale = 1.5f, widthDp = 390, heightDp = 844, showBackground = true, backgroundColor = 0xFFF8FBFF) @Composable private fun DashboardLargeFontPreview() { DashboardBackground { DashboardContent(sampleState(), {}, {}, { _, _ -> }, {}, {}, {}, {}, {}) } }

@@ -48,11 +48,13 @@ class FinanceViewModel @Inject constructor(private val repository:FinanceReposit
     fun addIncome(input:IncomeSourceInput)=mutate{repository.addIncomeSource(input)}
     fun linkIncome(paymentId:String,transactionId:String,amount:Long)=mutate{repository.linkIncomePayment(paymentId,transactionId,amount)}
     fun addBudget(input:BudgetInput)=mutate{repository.addBudget(input)}
+    fun addCategory(input:CategoryInput)=mutate{repository.addCategory(input)}
+    fun addAccount(input:AccountInput)=mutate{repository.addAccount(input)}
     fun setDebtSort(value:DebtSort)=update{copy(debtSort=value)}
     fun addDebt(input:DebtInput,onDone:(String)->Unit)=viewModelScope.launch{local.value=local.value.copy(saving=true,error=null);repository.addDebt(input).fold({id->local.value=local.value.copy(saving=false);onDone(id)},{local.value=local.value.copy(saving=false,error=it.userMessage())})}
     fun payDebt(installmentId:String,accountId:String,amount:Long,advance:Boolean)=mutate{repository.recordDebtPayment(installmentId,accountId,amount,advance)}
     fun reverseDebtPayment(transactionId:String)=mutate{repository.reverseDebtPayment(transactionId)}
-    fun settleDebt(debtId:String)=mutate{repository.confirmDebtSettlement(debtId)}
+    fun settleDebt(debtId:String,accountId:String,settlementAmount:Long,penaltyFee:Long)=mutate{repository.confirmDebtSettlement(debtId,accountId,settlementAmount,penaltyFee)}
     fun updateInstallment(id:String,due:LocalDate,principal:Long,interest:Long,fee:Long)=mutate{repository.updateDebtInstallment(id,due,principal,interest,fee)}
     fun reconcileSePay()=mutate(onDone={local.value=local.value.copy(lastSePaySync=Instant.now())}){repository.reconcileSePay()}
     fun checkForUpdate()=viewModelScope.launch{repository.latestAppRelease().onSuccess{release->local.value=local.value.copy(availableUpdate=release?.takeIf{it.versionCode>BuildConfig.VERSION_CODE})}}

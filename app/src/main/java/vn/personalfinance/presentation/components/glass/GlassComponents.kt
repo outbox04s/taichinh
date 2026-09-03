@@ -20,6 +20,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -50,9 +51,10 @@ fun LiquidGlassSurface(
     val shape = RoundedCornerShape(radius)
     Box(
         modifier
+            .shadow(if (level == GlassLevel.Primary) 22.dp else 14.dp, shape, ambientColor = LiquidGlassColors.Blue.copy(alpha = .16f), spotColor = LiquidGlassColors.Blue.copy(alpha = .20f))
             .clip(shape)
-            .background(Brush.verticalGradient(listOf(LiquidGlassColors.Highlight.copy(alpha = .14f), color, color.copy(alpha = .82f))))
-            .border(BorderStroke(1.dp, Brush.verticalGradient(listOf(LiquidGlassColors.Highlight, LiquidGlassColors.Border.copy(alpha = .06f)))), shape),
+            .background(Brush.linearGradient(listOf(LiquidGlassColors.Highlight.copy(alpha = .78f), color, LiquidGlassColors.BackgroundSecondary.copy(alpha = .42f))))
+            .border(BorderStroke(1.25.dp, Brush.linearGradient(listOf(LiquidGlassColors.Highlight, LiquidGlassColors.Border, LiquidGlassColors.Blue.copy(alpha = .34f)))), shape),
         content = content,
     )
 }
@@ -71,9 +73,9 @@ fun GlassIconButton(icon: ImageVector, description: String, onClick: () -> Unit,
 
 @Composable
 fun GlassChip(text: String, selected: Boolean = false, onClick: () -> Unit, modifier: Modifier = Modifier) {
-    val color by animateColorAsState(if (selected) LiquidGlassColors.Mint.copy(alpha = .22f) else LiquidGlassColors.GlassTertiary, tween(LiquidGlassMotion.Fast), label = "chip")
+    val color by animateColorAsState(if (selected) LiquidGlassColors.Blue.copy(alpha = .14f) else LiquidGlassColors.GlassTertiary, tween(LiquidGlassMotion.Fast), label = "chip")
     Surface(onClick = onClick, modifier = modifier.heightIn(min = 48.dp), shape = RoundedCornerShape(LiquidGlassShapes.ChipRadius), color = color, border = BorderStroke(1.dp, if (selected) LiquidGlassColors.Mint.copy(alpha = .45f) else LiquidGlassColors.Border)) {
-        Box(Modifier.padding(horizontal = 16.dp), contentAlignment = Alignment.Center) { Text(text, maxLines = 1, color = LiquidGlassColors.TextPrimary, style = MaterialTheme.typography.labelLarge) }
+        Box(Modifier.padding(horizontal = 16.dp), contentAlignment = Alignment.Center) { Text(text, maxLines = 1, color = if(selected) LiquidGlassColors.Blue else LiquidGlassColors.TextPrimary, style = MaterialTheme.typography.labelLarge, fontWeight = if(selected) FontWeight.Bold else FontWeight.Medium) }
     }
 }
 
@@ -95,10 +97,10 @@ fun GlassStatusPill(text: String, color: Color) {
 @Composable
 fun GlassEmptyState(icon: ImageVector, title: String, message: String, action: String? = null, onAction: () -> Unit = {}) {
     Column(Modifier.fillMaxWidth().padding(vertical = 10.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Surface(shape = CircleShape, color = LiquidGlassColors.Mint.copy(alpha = .12f)) { Icon(icon, null, Modifier.padding(12.dp).size(26.dp), tint = LiquidGlassColors.Mint) }
-        Text(title, color = LiquidGlassColors.TextPrimary, fontWeight = FontWeight.SemiBold)
+        Surface(shape = CircleShape, color = LiquidGlassColors.Blue.copy(alpha = .10f)) { Icon(icon, null, Modifier.padding(12.dp).size(26.dp), tint = LiquidGlassColors.Blue) }
+        Text(title.uppercase(), color = LiquidGlassColors.TextPrimary, fontWeight = FontWeight.Bold)
         Text(message, color = LiquidGlassColors.TextSecondary, style = MaterialTheme.typography.bodySmall)
-        action?.let { TextButton(onClick = onAction, modifier = Modifier.heightIn(min = 48.dp)) { Text(it, color = LiquidGlassColors.Mint) } }
+        action?.let { TextButton(onClick = onAction, modifier = Modifier.heightIn(min = 48.dp)) { Text(it, color = LiquidGlassColors.Blue) } }
     }
 }
 
@@ -107,5 +109,5 @@ fun GlassPressButton(text: String, onClick: () -> Unit, modifier: Modifier = Mod
     val source = remember { MutableInteractionSource() }
     val pressed by source.collectIsPressedAsState()
     val scale by animateFloatAsState(if (pressed) .975f else 1f, tween(120), label = "press")
-    Button(onClick, modifier.scale(scale).heightIn(min = 48.dp), interactionSource = source, colors = ButtonDefaults.buttonColors(containerColor = LiquidGlassColors.Mint, contentColor = Color(0xFF10241E))) { Text(text, maxLines = 1, overflow = TextOverflow.Ellipsis, fontWeight = FontWeight.Bold) }
+    Button(onClick, modifier.scale(scale).heightIn(min = 48.dp), interactionSource = source, colors = ButtonDefaults.buttonColors(containerColor = LiquidGlassColors.Blue, contentColor = Color.White)) { Text(text, maxLines = 1, overflow = TextOverflow.Ellipsis, fontWeight = FontWeight.Bold) }
 }
