@@ -15,7 +15,7 @@ data class BudgetInput(val categoryId: String?, val period: String, val limitAmo
 data class DebtInput(val name:String,val lenderName:String,val debtType:String,val originalPrincipal:Long,val currentPrincipal:Long,val interestRate:Double?,val interestType:String,val startDate:LocalDate,val maturityDate:LocalDate?,val paymentFrequency:String,val expectedPaymentAmount:Long,val nextDueDate:LocalDate,val note:String?,val receivedAmount:Long=0,val isNewLoan:Boolean=false,val remainingMonths:Int?=null,val receiveAccountId:String?=null)
 data class AppRelease(val versionCode:Long,val versionName:String,val apkUrl:String,val releaseNotes:String,val mandatory:Boolean)
 data class CategoryInput(val name:String,val type:TransactionType)
-data class AccountInput(val displayName:String,val openingBalance:Long,val bankShortName:String,val bankFullName:String,val bankLogo:String?)
+data class AccountInput(val displayName:String,val openingBalance:Long,val bankShortName:String,val bankFullName:String,val bankLogo:String?,val accountNumber:String,val purpose:String)
 
 interface FinanceRepository {
     val snapshot: StateFlow<FinanceSnapshot>

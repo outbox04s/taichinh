@@ -1,18 +1,12 @@
 package vn.personalfinance.presentation
 
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.animation.core.animateDpAsState
-import androidx.compose.animation.core.tween
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
@@ -22,18 +16,16 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.*
 import vn.personalfinance.domain.repository.TransactionEdits
-import vn.personalfinance.presentation.components.glass.GlassLevel
-import vn.personalfinance.presentation.components.glass.LiquidGlassSurface
+import vn.personalfinance.presentation.components.glass.GlassNavigationItem
+import vn.personalfinance.presentation.components.glass.LiquidGlassFloatingBottomBar
 import vn.personalfinance.presentation.screen.*
-import vn.personalfinance.presentation.theme.LiquidGlassColors
 
-private data class Destination(val route: String, val label: String, val icon: ImageVector)
 private val destinations = listOf(
-    Destination("overview", "Tổng quan", Icons.Rounded.Home),
-    Destination("transactions", "Giao dịch", Icons.Rounded.SwapHoriz),
-    Destination("budgets", "Tài khoản", Icons.Rounded.AccountBalanceWallet),
-    Destination("debts", "Khoản nợ", Icons.Rounded.CreditCard),
-    Destination("reports", "Báo cáo", Icons.Rounded.BarChart),
+    GlassNavigationItem("overview", "Tổng quan", Icons.Rounded.Home),
+    GlassNavigationItem("transactions", "Giao dịch", Icons.Rounded.SwapHoriz),
+    GlassNavigationItem("budgets", "Tài khoản", Icons.Rounded.AccountBalanceWallet),
+    GlassNavigationItem("debts", "Khoản nợ", Icons.Rounded.CreditCard),
+    GlassNavigationItem("reports", "Báo cáo", Icons.Rounded.BarChart),
 )
 
 @Composable
@@ -64,9 +56,9 @@ fun FinanceApp(viewModel: FinanceViewModel = hiltViewModel()) {
         )
     }
     Scaffold(containerColor = Color.Transparent, bottomBar = {
-        if (mainRoute) GlassBottomNavigation(destinations, backStack?.destination?.route) { item ->
+        if (mainRoute) LiquidGlassFloatingBottomBar(destinations, backStack?.destination?.route, { item ->
             nav.navigate(item.route) { popUpTo(nav.graph.findStartDestination().id) { saveState = true }; launchSingleTop = true; restoreState = true }
-        }
+        })
     }) { padding ->
         NavHost(nav, "overview", Modifier.padding(padding)) {
             composable("overview") { OverviewScreen(state, viewModel::refresh, viewModel::setPeriod, viewModel::setAccount, viewModel::setCustomRange, viewModel::addIncome, viewModel::linkIncome, { nav.navigate("settings") }, { nav.navigate("transaction/new") }, { nav.navigate("transactions") }, { nav.navigate("debts") }) }
@@ -79,28 +71,6 @@ fun FinanceApp(viewModel: FinanceViewModel = hiltViewModel()) {
             composable("debt/{id}") { entry -> val id = entry.arguments?.getString("id"); DebtDetailScreen(state.snapshot.debts.firstOrNull { it.id == id }, state.snapshot, { nav.popBackStack() }, viewModel::payDebt, viewModel::reverseDebtPayment, viewModel::settleDebt, viewModel::updateInstallment) }
             composable("reports") { PlaceholderScreen("Báo cáo") }
             composable("settings") { SettingsScreen(state, viewModel::reconcileSePay, { id, category -> val old = state.snapshot.transactions.first { it.id == id }; viewModel.editTransaction(id, TransactionEdits(category, old.note, old.status)) }, viewModel::addCategory) }
-        }
-    }
-}
-
-@Composable
-private fun GlassBottomNavigation(items: List<Destination>, route: String?, onSelect: (Destination) -> Unit) {
-    Box(Modifier.fillMaxWidth().navigationBarsPadding().padding(horizontal = 14.dp, vertical = 8.dp).height(86.dp), contentAlignment = Alignment.BottomCenter) {
-        LiquidGlassSurface(Modifier.fillMaxWidth().height(66.dp), GlassLevel.Primary) {
-            Row(Modifier.fillMaxWidth().padding(horizontal = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-                items.forEach { item ->
-                    val selected = route == item.route
-                    val offset by animateDpAsState(if(selected) (-10).dp else 0.dp, tween(260), label="menuDepth")
-                    Box(Modifier.weight(1f).fillMaxHeight(), contentAlignment = Alignment.Center) {
-                        Column(Modifier.offset(y=offset), horizontalAlignment = Alignment.CenterHorizontally) {
-                            Surface(onClick = { onSelect(item) }, modifier = Modifier.size(if(selected)58.dp else 48.dp), shape = CircleShape, color = if(selected) Color.White else Color.Transparent, border = if(selected) androidx.compose.foundation.BorderStroke(1.5.dp, LiquidGlassColors.Blue.copy(alpha=.35f)) else null, shadowElevation = if(selected)12.dp else 0.dp) {
-                                Box(contentAlignment=Alignment.Center){Icon(item.icon,item.label,tint=if(selected)LiquidGlassColors.Blue else LiquidGlassColors.TextSecondary,modifier=Modifier.size(if(selected)27.dp else 24.dp))}
-                            }
-                            if(selected) Text(item.label.uppercase(), color=LiquidGlassColors.Blue, maxLines=1, overflow=TextOverflow.Ellipsis, style=MaterialTheme.typography.labelSmall, fontWeight=androidx.compose.ui.text.font.FontWeight.Bold)
-                        }
-                    }
-                }
-            }
         }
     }
 }

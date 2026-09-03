@@ -137,7 +137,7 @@ fun OverviewScreen(
 @Composable private fun DashboardHeader(onSettings: () -> Unit) {
     val hour = java.time.LocalTime.now(VietnamZone).hour
     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-        Column(Modifier.weight(1f)) { Text(when (hour) { in 5..10 -> "CHÀO BUỔI SÁNG"; in 11..17 -> "CHÀO BUỔI CHIỀU"; else -> "CHÀO BUỔI TỐI" }, color = LiquidGlassColors.TextSecondary, fontSize = 12.sp, fontWeight = FontWeight.Medium); Text("TỔNG QUAN TÀI CHÍNH", color = LiquidGlassColors.TextPrimary, fontSize = 25.sp, fontWeight = FontWeight.Bold, maxLines = 1) }
+        Column(Modifier.weight(1f)) { Text(when (hour) { in 5..10 -> "CHÀO BUỔI SÁNG"; in 11..17 -> "CHÀO BUỔI CHIỀU"; else -> "CHÀO BUỔI TỐI" }, color = LiquidGlassColors.TextSecondary, fontSize = 12.sp, fontWeight = FontWeight.Medium,maxLines=1); Text("TỔNG QUAN", color = LiquidGlassColors.TextPrimary, fontSize = 26.sp, fontWeight = FontWeight.Bold, maxLines = 1) }
         GlassIconButton(Icons.Rounded.NotificationsNone, "Thông báo", {})
         Spacer(Modifier.width(8.dp)); GlassIconButton(Icons.Rounded.Settings, "Mở cài đặt", onSettings)
     }

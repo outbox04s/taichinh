@@ -7,7 +7,7 @@ enum class TransactionType { INCOME, EXPENSE, TRANSFER }
 enum class TransactionSource { MANUAL, SEPAY, RECURRING, DEBT_PAYMENT, ADJUSTMENT }
 enum class TransactionStatus { CONFIRMED, PENDING, EXCLUDED }
 
-data class FinancialAccount(val id: String, val name: String, val type: String, val currentBalance: Long, val active: Boolean = true,val bankShortName:String?=null,val bankFullName:String?=null,val bankLogo:String?=null)
+data class FinancialAccount(val id: String, val name: String, val type: String, val currentBalance: Long, val active: Boolean = true,val bankShortName:String?=null,val bankFullName:String?=null,val bankLogo:String?=null,val accountNumber:String?=null,val purpose:String?=null)
 data class Category(val id: String, val name: String, val type: TransactionType, val icon: String? = null, val color: String? = null, val isEssential:Boolean=false)
 data class Transaction(
     val id: String, val accountId: String, val categoryId: String?, val type: TransactionType,
