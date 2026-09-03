@@ -40,6 +40,13 @@ fun FinanceApp(viewModel: FinanceViewModel = hiltViewModel()) {
         lifecycleOwner.lifecycle.addObserver(observer)
         onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
+    fun navigateToMainTab(route: String) {
+        nav.navigate(route) {
+            popUpTo(nav.graph.findStartDestination().id) { saveState = true }
+            launchSingleTop = true
+            restoreState = true
+        }
+    }
     state.availableUpdate?.let { release ->
         AlertDialog(
             onDismissRequest = viewModel::dismissUpdate,
@@ -57,11 +64,11 @@ fun FinanceApp(viewModel: FinanceViewModel = hiltViewModel()) {
     }
     Scaffold(containerColor = Color.Transparent, bottomBar = {
         if (mainRoute) LiquidGlassFloatingBottomBar(destinations, backStack?.destination?.route, { item ->
-            nav.navigate(item.route) { popUpTo(nav.graph.findStartDestination().id) { saveState = true }; launchSingleTop = true; restoreState = true }
+            navigateToMainTab(item.route)
         })
     }) { padding ->
         NavHost(nav, "overview", Modifier.padding(padding)) {
-            composable("overview") { OverviewScreen(state, viewModel::refresh, viewModel::setPeriod, viewModel::setAccount, viewModel::setCustomRange, viewModel::addIncome, viewModel::linkIncome, { nav.navigate("settings") }, { nav.navigate("transaction/new") }, { nav.navigate("transactions") }, { nav.navigate("debts") }) }
+            composable("overview") { OverviewScreen(state, viewModel::refresh, viewModel::setPeriod, viewModel::setAccount, viewModel::setCustomRange, viewModel::addIncome, viewModel::linkIncome, { nav.navigate("settings") }, { nav.navigate("transaction/new") }, { navigateToMainTab("transactions") }, { navigateToMainTab("debts") }) }
             composable("transactions") { TransactionsScreen(state, viewModel::refresh, viewModel::setSearch, viewModel::setType, viewModel::setSource, viewModel::setAccount, viewModel::setCategory, { id, status -> val old = state.snapshot.transactions.first { it.id == id }; viewModel.editTransaction(id, TransactionEdits(old.categoryId, old.note, status)) }, viewModel::deleteTransaction, { nav.navigate("transaction/transfer") }) { nav.navigate("transaction/new") } }
             composable("transaction/new") { TransactionFormScreen(state.snapshot, state.saving, state.error, { input -> viewModel.addTransaction(input) { nav.popBackStack() } }) { nav.popBackStack() } }
             composable("transaction/transfer") { TransferFormScreen(state.snapshot.accounts, state.saving, state.error, { from, to, amount, note -> viewModel.transfer(from, to, amount, note) { nav.popBackStack() } }) { nav.popBackStack() } }
