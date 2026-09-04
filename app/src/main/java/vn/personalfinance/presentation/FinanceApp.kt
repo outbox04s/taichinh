@@ -72,8 +72,8 @@ fun FinanceApp(viewModel: FinanceViewModel = hiltViewModel()) {
             composable("transactions") { TransactionsScreen(state, viewModel::refresh, viewModel::setSearch, viewModel::setType, viewModel::setSource, viewModel::setAccount, viewModel::setCategory, { id, status -> val old = state.snapshot.transactions.first { it.id == id }; viewModel.editTransaction(id, TransactionEdits(old.categoryId, old.note, status)) }, viewModel::deleteTransaction, { nav.navigate("transaction/transfer") }) { nav.navigate("transaction/new") } }
             composable("transaction/new") { TransactionFormScreen(state.snapshot, state.saving, state.error, { input -> viewModel.addTransaction(input) { nav.popBackStack() } }) { nav.popBackStack() } }
             composable("transaction/transfer") { TransferFormScreen(state.snapshot.accounts, state.saving, state.error, { from, to, amount, note -> viewModel.transfer(from, to, amount, note) { nav.popBackStack() } }) { nav.popBackStack() } }
-            composable("budgets") { AccountsScreen(state, viewModel::refresh, viewModel::addAccount) }
-            composable("debts") { DebtListScreen(state, viewModel::refresh, viewModel::setDebtSort, { nav.navigate("debt/new") }) { nav.navigate("debt/$it") } }
+            composable("budgets") { AccountsScreen(state, viewModel::refresh, viewModel::addAccount, viewModel::deleteAccount) }
+            composable("debts") { DebtListScreen(state, viewModel::refresh, viewModel::setDebtSort, { nav.navigate("debt/new") }, viewModel::deleteDebt) { nav.navigate("debt/$it") } }
             composable("debt/new") { CreateDebtScreen(state.snapshot.accounts, state.saving, state.error, { nav.popBackStack() }) { input -> viewModel.addDebt(input) { id -> nav.navigate("debt/$id") { popUpTo("debts") } } } }
             composable("debt/{id}") { entry -> val id = entry.arguments?.getString("id"); DebtDetailScreen(state.snapshot.debts.firstOrNull { it.id == id }, state.snapshot, { nav.popBackStack() }, viewModel::payDebt, viewModel::reverseDebtPayment, viewModel::settleDebt, viewModel::updateInstallment) }
             composable("reports") { PlaceholderScreen("Báo cáo") }

@@ -50,8 +50,10 @@ class FinanceViewModel @Inject constructor(private val repository:FinanceReposit
     fun addBudget(input:BudgetInput)=mutate{repository.addBudget(input)}
     fun addCategory(input:CategoryInput)=mutate{repository.addCategory(input)}
     fun addAccount(input:AccountInput)=mutate{repository.addAccount(input)}
+    fun deleteAccount(id:String)=mutate{repository.deleteAccount(id)}
     fun setDebtSort(value:DebtSort)=update{copy(debtSort=value)}
     fun addDebt(input:DebtInput,onDone:(String)->Unit)=viewModelScope.launch{local.value=local.value.copy(saving=true,error=null);repository.addDebt(input).fold({id->local.value=local.value.copy(saving=false);onDone(id)},{local.value=local.value.copy(saving=false,error=it.userMessage())})}
+    fun deleteDebt(id:String)=mutate{repository.deleteDebt(id)}
     fun payDebt(installmentId:String,accountId:String,amount:Long,advance:Boolean)=mutate{repository.recordDebtPayment(installmentId,accountId,amount,advance)}
     fun reverseDebtPayment(transactionId:String)=mutate{repository.reverseDebtPayment(transactionId)}
     fun settleDebt(debtId:String,accountId:String,settlementAmount:Long,penaltyFee:Long)=mutate{repository.confirmDebtSettlement(debtId,accountId,settlementAmount,penaltyFee)}

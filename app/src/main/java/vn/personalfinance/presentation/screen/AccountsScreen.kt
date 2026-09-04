@@ -4,6 +4,7 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.util.LruCache
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -36,16 +37,19 @@ import java.net.URL
 data class VietQrBank(val id:Int,val code:String,val shortName:String,val name:String,val logo:String?)
 
 @Composable
-fun AccountsScreen(state:FinanceUiState,onRetry:()->Unit,onAdd:(AccountInput)->Unit){
-    var showAdd by remember{mutableStateOf(false)}
+fun AccountsScreen(state:FinanceUiState,onRetry:()->Unit,onAdd:(AccountInput)->Unit,onDelete:(String)->Unit){
+    var showAdd by remember{mutableStateOf(false)};var deleting by remember{mutableStateOf<FinancialAccount?>(null)}
     ScreenState(state.loading,state.error,false,onRetry){LazyColumn(Modifier.fillMaxSize(),contentPadding=PaddingValues(16.dp,16.dp,16.dp,110.dp),verticalArrangement=Arrangement.spacedBy(12.dp)){
         item{Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically){Column(Modifier.weight(1f)){Text("TÀI KHOẢN",style=MaterialTheme.typography.headlineMedium,fontWeight=FontWeight.Bold);Text("Tổng số dư ${state.snapshot.accounts.sumOf{it.currentBalance}.toVnd()}",color=MaterialTheme.colorScheme.onSurfaceVariant)};FilledTonalIconButton({showAdd=true}){Icon(Icons.Rounded.Add,"Thêm tài khoản")}}}
-        if(state.snapshot.accounts.isEmpty())item{Card{Column(Modifier.fillMaxWidth().padding(20.dp),horizontalAlignment=Alignment.CenterHorizontally){Icon(Icons.Rounded.AccountBalance,null,Modifier.size(38.dp));Text("CHƯA CÓ TÀI KHOẢN",fontWeight=FontWeight.Bold);Button({showAdd=true},Modifier.padding(top=10.dp).heightIn(min=48.dp)){Text("THÊM TÀI KHOẢN")}}}} else items(state.snapshot.accounts,key={it.id}){AccountRow(it)}
+        if(state.snapshot.accounts.isEmpty())item{Card{Column(Modifier.fillMaxWidth().padding(20.dp),horizontalAlignment=Alignment.CenterHorizontally){Icon(Icons.Rounded.AccountBalance,null,Modifier.size(38.dp));Text("CHƯA CÓ TÀI KHOẢN",fontWeight=FontWeight.Bold);Button({showAdd=true},Modifier.padding(top=10.dp).heightIn(min=48.dp)){Text("THÊM TÀI KHOẢN")}}}} else items(state.snapshot.accounts,key={it.id}){AccountRow(it){deleting=it}}
     }}
     if(showAdd)AddBankAccountDialog({showAdd=false}){onAdd(it);showAdd=false}
+    deleting?.let{account->DeleteDialog("Xóa tài khoản?","${account.name} sẽ được ẩn. Lịch sử giao dịch vẫn được giữ.",{deleting=null}){onDelete(account.id);deleting=null}}
 }
 
-@Composable private fun AccountRow(account:FinancialAccount){Card(Modifier.fillMaxWidth()){Row(Modifier.fillMaxWidth().padding(14.dp),verticalAlignment=Alignment.CenterVertically){BankLogo(account.bankLogo,Modifier.size(38.dp));Column(Modifier.weight(1f).padding(horizontal=12.dp)){Text(account.name,fontWeight=FontWeight.Bold,maxLines=1,overflow=TextOverflow.Ellipsis);Text("${account.bankShortName?:"Ngân hàng"} • ${account.accountNumber?:"Chưa có số tài khoản"}",maxLines=1,overflow=TextOverflow.Ellipsis,style=MaterialTheme.typography.bodySmall);account.purpose?.let{Text(it,maxLines=1,overflow=TextOverflow.Ellipsis,style=MaterialTheme.typography.labelSmall,color=MaterialTheme.colorScheme.primary)}};Text(account.currentBalance.toVnd(),fontWeight=FontWeight.Bold,maxLines=1)}}}
+@Composable private fun AccountRow(account:FinancialAccount,onLongClick:()->Unit){Card(Modifier.fillMaxWidth().combinedClickable(onClick={},onLongClick=onLongClick)){Row(Modifier.fillMaxWidth().padding(14.dp),verticalAlignment=Alignment.CenterVertically){BankLogo(account.bankLogo,Modifier.size(38.dp));Column(Modifier.weight(1f).padding(horizontal=12.dp)){Text(account.name,fontWeight=FontWeight.Bold,maxLines=1,overflow=TextOverflow.Ellipsis);Text("${account.bankShortName?:"Ngân hàng"} • ${account.accountNumber?:"Chưa có số tài khoản"}",maxLines=1,overflow=TextOverflow.Ellipsis,style=MaterialTheme.typography.bodySmall);account.purpose?.let{Text(it,maxLines=1,overflow=TextOverflow.Ellipsis,style=MaterialTheme.typography.labelSmall,color=MaterialTheme.colorScheme.primary)}};Text(account.currentBalance.toVnd(),fontWeight=FontWeight.Bold,maxLines=1)}}}
+
+@Composable private fun DeleteDialog(title:String,message:String,onDismiss:()->Unit,onDelete:()->Unit)=AlertDialog(onDismissRequest=onDismiss,title={Text(title)},text={Text(message)},confirmButton={Button(onDelete,colors=ButtonDefaults.buttonColors(containerColor=MaterialTheme.colorScheme.error)){Text("XÓA")}},dismissButton={TextButton(onDismiss){Text("HỦY")}})
 
 @Composable private fun AddBankAccountDialog(onDismiss:()->Unit,onSave:(AccountInput)->Unit){
     var banks by remember{mutableStateOf<List<VietQrBank>>(emptyList())};var loading by remember{mutableStateOf(true)};var loadError by remember{mutableStateOf<String?>(null)};var query by remember{mutableStateOf("")};var selected by remember{mutableStateOf<VietQrBank?>(null)};var displayName by remember{mutableStateOf("")};var accountNumber by remember{mutableStateOf("")};var purpose by remember{mutableStateOf("")};var balance by remember{mutableStateOf("")};var validation by remember{mutableStateOf<String?>(null)}

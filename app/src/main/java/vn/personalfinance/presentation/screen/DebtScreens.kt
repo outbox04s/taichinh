@@ -1,6 +1,7 @@
 @file:OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 package vn.personalfinance.presentation.screen
 
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -21,7 +22,8 @@ import vn.personalfinance.presentation.*
 import java.time.LocalDate
 import java.time.temporal.ChronoUnit
 
-@Composable fun DebtListScreen(state:FinanceUiState,onRetry:()->Unit,onSort:(DebtSort)->Unit,onAdd:()->Unit,onOpen:(String)->Unit){
+@Composable fun DebtListScreen(state:FinanceUiState,onRetry:()->Unit,onSort:(DebtSort)->Unit,onAdd:()->Unit,onDelete:(String)->Unit,onOpen:(String)->Unit){
+ var deleting by remember{mutableStateOf<Debt?>(null)}
  val today=LocalDate.now(VietnamZone);val monthStart=today.withDayOfMonth(1);val monthEnd=monthStart.withDayOfMonth(monthStart.lengthOfMonth())
  val active=state.snapshot.debts.filter{it.status!="paid"};val paid=state.snapshot.debts.filter{it.status=="paid"}
  val monthDue=state.snapshot.installments.filter{!it.dueDate.isBefore(monthStart)&&!it.dueDate.isAfter(monthEnd)}.sumOf{it.totalDue-it.paidAmount}
@@ -29,13 +31,14 @@ import java.time.temporal.ChronoUnit
  val sorted=active.sortedWith(when(state.debtSort){DebtSort.DUE_DATE->compareBy(nullsLast()){it.nextDueDate};DebtSort.BALANCE->compareByDescending{it.currentPrincipal};DebtSort.RISK->compareByDescending<Debt>{d->state.snapshot.installments.count{it.debtId==d.id&&it.dueDate<today&&it.paidAmount<it.totalDue}}.thenBy{it.nextDueDate}})
  ScreenState(state.loading,state.error,false,onRetry){LazyColumn(Modifier.fillMaxSize(),contentPadding=PaddingValues(16.dp),verticalArrangement=Arrangement.spacedBy(10.dp)){
   item{Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceBetween,verticalAlignment=Alignment.CenterVertically){Text("KHOẢN NỢ",style=MaterialTheme.typography.headlineMedium,fontWeight=FontWeight.Bold,maxLines=1);Button(onAdd,Modifier.heightIn(min=48.dp)){Text("＋ TẠO",maxLines=1)}};DebtMetrics(active.sumOf{it.currentPrincipal},state.snapshot.debts.sumOf{it.originalPrincipal},monthDue,overdue);Row(horizontalArrangement=Arrangement.spacedBy(6.dp)){DebtSort.entries.forEach{sort->FilterChip(state.debtSort==sort,{onSort(sort)},{Text(when(sort){DebtSort.DUE_DATE->"Gần hạn";DebtSort.BALANCE->"Dư nợ";DebtSort.RISK->"Rủi ro"})})}};Text("Đang hoạt động",style=MaterialTheme.typography.titleLarge,fontWeight=FontWeight.Bold)}
-  if(sorted.isEmpty())item{Text("Không có khoản nợ đang hoạt động")};items(sorted,key={it.id}){DebtCard(it,state.snapshot.installments.filter{i->i.debtId==it.id},today){onOpen(it.id)}}
-  item{Text("Đã tất toán",style=MaterialTheme.typography.titleLarge,fontWeight=FontWeight.Bold)};if(paid.isEmpty())item{Text("Chưa có khoản đã tất toán")};items(paid,key={it.id}){DebtCard(it,emptyList(),today){onOpen(it.id)}}
+  if(sorted.isEmpty())item{Text("Không có khoản nợ đang hoạt động")};items(sorted,key={it.id}){debt->DebtCard(debt,state.snapshot.installments.filter{i->i.debtId==debt.id},today,{onOpen(debt.id)}){deleting=debt}}
+  item{Text("Đã tất toán",style=MaterialTheme.typography.titleLarge,fontWeight=FontWeight.Bold)};if(paid.isEmpty())item{Text("Chưa có khoản đã tất toán")};items(paid,key={it.id}){debt->DebtCard(debt,emptyList(),today,{onOpen(debt.id)}){deleting=debt}}
  }}
+ deleting?.let{debt->AlertDialog(onDismissRequest={deleting=null},title={Text("Xóa khoản nợ?")},text={Text("${debt.name} sẽ được ẩn. Lịch sử kỳ hạn và thanh toán vẫn được giữ.")},confirmButton={Button({onDelete(debt.id);deleting=null},colors=ButtonDefaults.buttonColors(containerColor=MaterialTheme.colorScheme.error)){Text("XÓA")}},dismissButton={TextButton({deleting=null}){Text("HỦY")}})}
 }
 @Composable private fun DebtMetrics(balance:Long,original:Long,month:Long,overdue:Long){Column(verticalArrangement=Arrangement.spacedBy(6.dp)){listOf("Tổng dư nợ" to balance,"Gốc ban đầu" to original,"Phải trả tháng này" to month,"Đã quá hạn" to overdue).chunked(2).forEach{r->Row(horizontalArrangement=Arrangement.spacedBy(6.dp)){r.forEach{(l,v)->Card(Modifier.weight(1f)){Column(Modifier.padding(10.dp)){Text(l,style=MaterialTheme.typography.labelMedium);Text(v.toVnd(),fontWeight=FontWeight.Bold,color=if(l.contains("quá hạn"))MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary)}}}}}}
 }
-@Composable private fun DebtCard(debt:Debt,installments:List<DebtInstallment>,today:LocalDate,onClick:()->Unit){val late=installments.any{it.dueDate<today&&it.paidAmount<it.totalDue};Card(onClick=onClick){Column(Modifier.fillMaxWidth().padding(14.dp)){Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceBetween){Text(debt.name,fontWeight=FontWeight.Bold);Text(debt.currentPrincipal.toVnd(),fontWeight=FontWeight.Bold)};Text(debt.lenderName?:"Không ghi bên cho vay");Text((if(late)"⚠ Quá hạn" else if(debt.status=="paid")"✓ Đã tất toán" else if(debt.paymentFrequency=="yearly")"Thanh toán hàng năm" else "Thanh toán hàng tháng • ngày ${debt.nextDueDate?.dayOfMonth?:"—"}"),color=if(late)MaterialTheme.colorScheme.error else LocalContentColor.current)}}
+@Composable private fun DebtCard(debt:Debt,installments:List<DebtInstallment>,today:LocalDate,onClick:()->Unit,onLongClick:()->Unit){val late=installments.any{it.dueDate<today&&it.paidAmount<it.totalDue};Card(Modifier.fillMaxWidth().combinedClickable(onClick=onClick,onLongClick=onLongClick)){Column(Modifier.fillMaxWidth().padding(14.dp)){Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceBetween){Text(debt.name,fontWeight=FontWeight.Bold);Text(debt.currentPrincipal.toVnd(),fontWeight=FontWeight.Bold)};Text(debt.lenderName?:"Không ghi bên cho vay");Text((if(late)"⚠ Quá hạn" else if(debt.status=="paid")"✓ Đã tất toán" else if(debt.paymentFrequency=="yearly")"Thanh toán hàng năm" else "Thanh toán hàng tháng • ngày ${debt.nextDueDate?.dayOfMonth?:"—"}"),color=if(late)MaterialTheme.colorScheme.error else LocalContentColor.current)}}
 }
 
 @Composable private fun LegacyCreateDebtScreen(saving:Boolean,error:String?,onBack:()->Unit,onSave:(DebtInput)->Unit){var name by remember{mutableStateOf("")};var lender by remember{mutableStateOf("")};var type by remember{mutableStateOf("loan")};var original by remember{mutableStateOf("")};var current by remember{mutableStateOf("")};var hasInterest by remember{mutableStateOf(false)};var rate by remember{mutableStateOf("")};var interestType by remember{mutableStateOf("yearly")};var start by remember{mutableStateOf(LocalDate.now(VietnamZone).toString())};var maturity by remember{mutableStateOf("")};var frequency by remember{mutableStateOf("monthly")};var expected by remember{mutableStateOf("")};var nextDue by remember{mutableStateOf(LocalDate.now(VietnamZone).plusMonths(1).toString())};var note by remember{mutableStateOf("")};var validation by remember{mutableStateOf<String?>(null)}

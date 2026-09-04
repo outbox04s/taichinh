@@ -29,7 +29,9 @@ interface FinanceRepository {
     suspend fun addBudget(input: BudgetInput): Result<Unit>
     suspend fun addCategory(input:CategoryInput):Result<Unit>
     suspend fun addAccount(input:AccountInput):Result<Unit>
+    suspend fun deleteAccount(id:String):Result<Unit>
     suspend fun addDebt(input:DebtInput):Result<String>
+    suspend fun deleteDebt(id:String):Result<Unit>
     suspend fun recordDebtPayment(installmentId:String,accountId:String,amount:Long,allowAdvance:Boolean):Result<Unit>
     suspend fun reverseDebtPayment(transactionId:String):Result<Unit>
     suspend fun confirmDebtSettlement(debtId:String,accountId:String,settlementAmount:Long,penaltyFee:Long):Result<Unit>
