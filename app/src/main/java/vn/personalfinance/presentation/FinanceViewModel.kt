@@ -43,7 +43,7 @@ class FinanceViewModel @Inject constructor(private val repository:FinanceReposit
     fun setCategory(value:String?)=update{copy(categoryId=value)}
     fun addTransaction(input:ManualTransactionInput,onDone:()->Unit)=mutate(onDone){repository.addManualTransaction(input)}
     fun editTransaction(id:String,edits:TransactionEdits)=mutate{repository.updateTransaction(id,edits)}
-    fun deleteTransaction(id:String)=mutate{repository.softDeleteManualTransaction(id)}
+    fun deleteTransaction(id:String)=mutate{repository.deleteTransaction(id)}
     fun transfer(from:String,to:String,amount:Long,description:String?,onDone:()->Unit)=mutate(onDone){repository.transfer(from,to,amount,Instant.now(),description)}
     fun addIncome(input:IncomeSourceInput)=mutate{repository.addIncomeSource(input)}
     fun linkIncome(paymentId:String,transactionId:String,amount:Long)=mutate{repository.linkIncomePayment(paymentId,transactionId,amount)}
