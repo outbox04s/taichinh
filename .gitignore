@@ -9,3 +9,4 @@ captures/
 .cxx/
 supabase/.temp/
 .tooling/
+node_modules/
