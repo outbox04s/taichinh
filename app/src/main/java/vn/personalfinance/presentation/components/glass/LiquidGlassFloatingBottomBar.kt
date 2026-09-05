@@ -1,10 +1,9 @@
 package vn.personalfinance.presentation.components.glass
 
-import androidx.compose.animation.Crossfade
-import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.animateDpAsState
-import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.snap
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -22,9 +21,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.hapticfeedback.HapticFeedbackType
-import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.role
@@ -50,12 +49,13 @@ fun LiquidGlassFloatingBottomBar(
 ){
     if(items.isEmpty())return
     val selectedIndex=items.indexOfFirst{it.route==currentRoute}.coerceAtLeast(0)
-    val haptic=LocalHapticFeedback.current
     BoxWithConstraints(modifier.fillMaxWidth().navigationBarsPadding().padding(horizontal=16.dp,vertical=10.dp).height(86.dp)){
         val itemWidth=maxWidth/items.size
         val bubbleSize=58.dp
         val targetX=itemWidth*selectedIndex+(itemWidth-bubbleSize)/2
-        val bubbleX by animateDpAsState(targetX,if(reduceMotion)snap() else spring(dampingRatio=Spring.DampingRatioNoBouncy,stiffness=Spring.StiffnessMediumLow),label="activeBubbleX")
+        val density=LocalDensity.current
+        val targetXPx=with(density){targetX.toPx()}
+        val bubbleX by animateFloatAsState(targetXPx,if(reduceMotion)snap() else tween(210,easing=FastOutSlowInEasing),label="activeBubbleX")
         val capsuleShape=RoundedCornerShape(32.dp)
         val capsuleColor=if(reduceTransparency)Color(0xFFF4F8FF)else Color.White.copy(alpha=.70f)
         Box(
@@ -69,7 +69,7 @@ fun LiquidGlassFloatingBottomBar(
                     val active=index==selectedIndex
                     Box(
                         Modifier.weight(1f).fillMaxHeight().clickable(role=Role.Tab,indication=null,interactionSource=remember{MutableInteractionSource()}){
-                            if(!active){haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove);onItemSelected(item)}
+                            if(!active)onItemSelected(item)
                         }.semantics{selected=active;role=Role.Tab;contentDescription=item.label},
                         contentAlignment=Alignment.Center,
                     ){
@@ -80,13 +80,13 @@ fun LiquidGlassFloatingBottomBar(
             }
         }
         Surface(
-            modifier=Modifier.offset(x=bubbleX,y=0.dp).size(bubbleSize).shadow(14.dp,CircleShape,ambientColor=accent.copy(alpha=.22f),spotColor=accent.copy(alpha=.25f)),
+            modifier=Modifier.graphicsLayer{translationX=bubbleX}.size(bubbleSize).shadow(14.dp,CircleShape,ambientColor=accent.copy(alpha=.22f),spotColor=accent.copy(alpha=.25f)),
             shape=CircleShape,
             color=if(reduceTransparency)Color.White else Color.White.copy(alpha=.82f),
             border=BorderStroke(1.4.dp,Brush.linearGradient(listOf(Color.White,accent.copy(alpha=.46f),Color.White))),
         ){
             Box(Modifier.fillMaxSize().background(Brush.radialGradient(listOf(accent.copy(alpha=.12f),Color.Transparent))),contentAlignment=Alignment.Center){
-                Crossfade(selectedIndex,animationSpec=if(reduceMotion)snap() else androidx.compose.animation.core.tween(280),label="activeIcon"){index->Icon(items[index].icon,items[index].label,Modifier.size(25.dp),tint=accent)}
+                Icon(items[selectedIndex].icon,items[selectedIndex].label,Modifier.size(25.dp),tint=accent)
             }
         }
     }
