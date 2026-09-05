@@ -16,20 +16,24 @@ import androidx.compose.ui.unit.dp
 import vn.personalfinance.domain.ReportCalculator
 import vn.personalfinance.domain.model.*
 import vn.personalfinance.domain.repository.FixedExpenseInput
+import vn.personalfinance.domain.repository.IncomeSourceInput
 import vn.personalfinance.presentation.*
 import vn.personalfinance.presentation.components.glass.GlassCard
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
-@Composable fun ReportsScreen(state:FinanceUiState,onRetry:()->Unit,onFixed:()->Unit,onCategories:()->Unit) {
+@Composable fun ReportsScreen(state:FinanceUiState,onRetry:()->Unit,onFixed:()->Unit,onCategories:()->Unit,onAddIncome:(IncomeSourceInput)->Unit,onLinkIncome:(String,String,Long)->Unit) {
+    LaunchedEffect(Unit) { onRetry() }
     ScreenState(state.loading,state.error,false,onRetry) {
         val plans=ReportCalculator.forecast(state.snapshot,LocalDate.now(VietnamZone))
         LazyColumn(Modifier.fillMaxSize(),contentPadding=PaddingValues(16.dp),verticalArrangement=Arrangement.spacedBy(12.dp)) {
             item {
                 Text("Báo cáo",style=MaterialTheme.typography.headlineMedium,fontWeight=FontWeight.Bold)
                 Text("Kế hoạch thu chi 12 tháng",style=MaterialTheme.typography.titleMedium)
-                Text("Còn cho chi tiêu khác = nguồn thu dự kiến − chi phí cố định − gốc, lãi và phí vay theo lịch.")
-                Text("Tính trọn tháng, gồm cả kỳ nợ đã trả. Chưa trừ chi tiêu sinh hoạt khác; đây không phải số dư tài khoản.",style=MaterialTheme.typography.bodySmall)
+                Text("Số dư cuối kỳ = số dư đầu kỳ + thu còn dự kiến nhận − chi phí cố định còn phải chi − nợ còn phải trả.")
+                Text("Tháng hiện tại bắt đầu từ tài sản khả dụng. Các tháng sau chuyển tiếp số dư cuối tháng trước, kể cả số âm. Chi tiêu phát sinh sau này sẽ làm thay đổi dự báo khi cập nhật số dư.",style=MaterialTheme.typography.bodySmall)
+                Text("Kỳ thu đã liên kết hoặc ghi nhận nhận tiền không cộng lại. Chi phí đã trả được đối chiếu theo cùng tài khoản, danh mục và mô tả trùng tên khoản cố định. Khoản chưa đối chiếu vẫn được dự phòng; chưa tính chi tiêu biến đổi trong tương lai.",style=MaterialTheme.typography.bodySmall)
+                TextButton(onRetry){Text("Cập nhật số dư và báo cáo")}
                 OutlinedButton(onFixed,Modifier.fillMaxWidth()){Text("Quản lý chi phí cố định")}
                 OutlinedButton(onCategories,Modifier.fillMaxWidth()){Text("Tổng hợp chi tiêu theo danh mục")}
             }
@@ -40,14 +44,17 @@ import java.time.format.DateTimeFormatter
                 if(state.snapshot.incomeSources.none{it.active})Text("Chưa thiết lập nguồn thu nhập. Thêm nguồn thu tại Tổng quan để dự toán đầy đủ.")
                 if(state.snapshot.debts.any{d->d.status!="paid" && state.snapshot.installments.none{it.debtId==d.id}})Text("Có khoản vay chưa có lịch trả: dự toán có thể thiếu nghĩa vụ trả nợ.")
             } }
+            item { IncomeSourcesCard(state.snapshot,onAddIncome,onLinkIncome) }
             items(plans,key={it.month.toString()}){plan->GlassCard {
                 Text(plan.month.format(DateTimeFormatter.ofPattern("MM/yyyy")),style=MaterialTheme.typography.titleLarge,fontWeight=FontWeight.Bold)
-                ReportAmount("Thu nhập dự kiến",plan.income)
-                ReportAmount("Chi phí cố định",plan.fixedExpenses)
-                ReportAmount("Trả vay theo lịch",plan.debtDue)
+                ReportAmount(if(plan==plans.firstOrNull())"Tài sản khả dụng hiện có" else "Số dư chuyển từ tháng trước",plan.openingBalance)
+                ReportAmount("Thu còn dự kiến nhận",plan.income)
+                ReportAmount("Chi phí cố định còn phải chi",plan.fixedExpenses)
+                ReportAmount("Vay còn phải trả",plan.debtDue)
                 if(plan.overdue>0)ReportAmount("Nợ tồn từ tháng trước",plan.overdue)
+                ReportAmount("Thu − chi còn lại trong kỳ",plan.netCashFlow)
                 HorizontalDivider()
-                Text(if(plan.remaining<0)"Nguy cơ âm: thiếu ${(-plan.remaining).toVnd()}" else "Còn cho chi tiêu khác: ${plan.remaining.toVnd()}",fontWeight=FontWeight.Bold,color=if(plan.remaining<0)MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary)
+                Text(if(plan.remaining<0)"Số dư cuối kỳ âm: ${plan.remaining.toVnd()}" else "Số dư cuối kỳ dự kiến: ${plan.remaining.toVnd()}",fontWeight=FontWeight.Bold,color=if(plan.remaining<0)MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary)
             }}
         }
     }

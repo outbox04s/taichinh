@@ -13,13 +13,13 @@ class ReportCalculatorTest {
     private val debt=Debt("loan","Loan",null,"personal",20_000_000,20_000_000,null,"none",today,null,"monthly",8_000_000,today,"active",null)
     private fun installment(id:String,date:LocalDate,total:Long,paid:Long=0)=DebtInstallment(id,"loan",date,total,0,0,total,paid,null,if(paid==total)"paid" else "pending")
 
-    @Test fun `monthly plan shows deficits and keeps full month paid obligations`() {
+    @Test fun `paid obligations are not charged again and monthly surplus accumulates`() {
         val snapshot=FinanceSnapshot(incomeSources=listOf(income),recurringEntries=listOf(fixed),debts=listOf(debt),installments=listOf(installment("sep",today,8_000_000,8_000_000),installment("oct",today.plusMonths(1),2_000_000)))
         val plans=ReportCalculator.forecast(snapshot,today)
         assertEquals(12,plans.size)
-        assertEquals(-1_000_000L,plans[0].remaining)
-        assertEquals(5_000_000L,plans[1].remaining)
-        assertEquals(7_000_000L,plans[2].remaining)
+        assertEquals(7_000_000L,plans[0].remaining)
+        assertEquals(12_000_000L,plans[1].remaining)
+        assertEquals(19_000_000L,plans[2].remaining)
     }
     @Test fun `monthly recurrence clamps to month end and respects end date and pause`() {
         val jan=LocalDate.of(2028,1,31)
@@ -31,7 +31,7 @@ class ReportCalculatorTest {
         val plans=ReportCalculator.forecast(snapshot,today,2)
         assertEquals(500L,plans[0].overdue)
         assertEquals(-500L,plans[0].remaining)
-        assertEquals(0L,plans[1].remaining)
+        assertEquals(-500L,plans[1].remaining)
     }
     @Test fun `weekly and irregular income use actual occurrence dates`() {
         val snapshot=FinanceSnapshot(incomeSources=listOf(income.copy(expectedAmount=100,frequency="weekly",nextExpectedDate=LocalDate.of(2026,9,1)),income.copy(id="once",expectedAmount=50,frequency="irregular"),income.copy(id="inactive",active=false)))
@@ -41,12 +41,48 @@ class ReportCalculatorTest {
     }
     @Test fun `linked income replaces estimate without counting twice`() {
         val snapshot=FinanceSnapshot(incomeSources=listOf(income),incomePayments=listOf(IncomePayment("p","salary",today,10_000_000,"tx",9_000_000)))
-        assertEquals(9_000_000L,ReportCalculator.forecast(snapshot,today,1).single().income)
+        assertEquals(0L,ReportCalculator.forecast(snapshot,today,1).single().income)
     }
     @Test fun `one weekly receipt does not remove the remaining expected weeks`() {
         val date=LocalDate.of(2026,9,1)
         val snapshot=FinanceSnapshot(incomeSources=listOf(income.copy(frequency="weekly",expectedAmount=100,nextExpectedDate=date)),incomePayments=listOf(IncomePayment("p","salary",date,100,"tx",80)))
-        assertEquals(480L,ReportCalculator.forecast(snapshot,today,1).single().income)
+        assertEquals(400L,ReportCalculator.forecast(snapshot,today,1).single().income)
+    }
+    @Test fun `live assets seed only first month and account changes flow through every month`() {
+        val snapshot=FinanceSnapshot(accounts=listOf(FinancialAccount("a","Cash","cash",5_000_000),FinancialAccount("old","Closed","cash",99_000_000,false)),incomeSources=listOf(income),recurringEntries=listOf(fixed))
+        val plans=ReportCalculator.forecast(snapshot,today,3)
+        assertEquals(listOf(5_000_000L,12_000_000L,19_000_000L),plans.map{it.openingBalance})
+        assertEquals(listOf(12_000_000L,19_000_000L,26_000_000L),plans.map{it.remaining})
+        val updated=ReportCalculator.forecast(snapshot.copy(accounts=listOf(snapshot.accounts.first().copy(currentBalance=4_000_000))),today,3)
+        assertEquals(listOf(1_000_000L,1_000_000L,1_000_000L),plans.zip(updated).map{(a,b)->a.remaining-b.remaining})
+    }
+    @Test fun `partial debt payment changes assets and obligation equally`() {
+        val snapshot=FinanceSnapshot(accounts=listOf(FinancialAccount("a","Cash","cash",5_000_000)),debts=listOf(debt),installments=listOf(installment("sep",today,3_000_000)))
+        val before=ReportCalculator.forecast(snapshot,today,2)
+        val after=ReportCalculator.forecast(snapshot.copy(accounts=listOf(snapshot.accounts.single().copy(currentBalance=4_000_000)),installments=listOf(snapshot.installments.single().copy(paidAmount=1_000_000))),today,2)
+        assertEquals(before.map{it.remaining},after.map{it.remaining})
+    }
+    @Test fun `received salary and paid fixed bill already in assets are not counted again`() {
+        val zone=ZoneId.of("Asia/Ho_Chi_Minh")
+        val expense=fixed.copy(title="Rent",accountId="a",categoryId="rent")
+        val snapshot=FinanceSnapshot(accounts=listOf(FinancialAccount("a","Cash","cash",2_000_000)),incomeSources=listOf(income),recurringEntries=listOf(expense))
+        val before=ReportCalculator.forecast(snapshot,today,2)
+        val paid=Transaction("rent-paid","a","rent",TransactionType.EXPENSE,3_000_000,today.atStartOfDay(zone).toInstant(),"Rent",null,TransactionSource.MANUAL,TransactionStatus.CONFIRMED)
+        val after=ReportCalculator.forecast(snapshot.copy(accounts=listOf(snapshot.accounts.single().copy(currentBalance=9_000_000)),incomePayments=listOf(IncomePayment("salary-paid","salary",today,10_000_000,"salary-tx",10_000_000)),transactions=listOf(paid)),today,2)
+        assertEquals(before.map{it.remaining},after.map{it.remaining})
+        assertEquals(0L,after.first().fixedExpenses)
+        assertEquals(3_000_000L,after.last().fixedExpenses)
+    }
+    @Test fun `one fixed bill payment is shared once and unrelated expenses do not offset it`() {
+        val zone=ZoneId.of("Asia/Ho_Chi_Minh")
+        val expense=fixed.copy(title="Rent",accountId="a",categoryId="rent")
+        val paid=Transaction("p","a","rent",TransactionType.EXPENSE,4_000_000,today.atStartOfDay(zone).toInstant(),"Rent",null,TransactionSource.MANUAL,TransactionStatus.CONFIRMED)
+        val snapshot=FinanceSnapshot(recurringEntries=listOf(expense,expense.copy(id="second")),transactions=listOf(paid,paid.copy(id="other",description="Other"),paid.copy(id="pending",status=TransactionStatus.PENDING),paid.copy(id="deleted",deletedAt=paid.transactionAt)))
+        assertEquals(2_000_000L,ReportCalculator.forecast(snapshot,today,1).single().fixedExpenses)
+    }
+    @Test fun `new current month starts again from actual assets not prior projection`() {
+        val snapshot=FinanceSnapshot(accounts=listOf(FinancialAccount("a","Cash","cash",1_000_000)),incomeSources=listOf(income))
+        assertEquals(1_000_000L,ReportCalculator.forecast(snapshot,today.plusMonths(1),1).single().openingBalance)
     }
     @Test fun `category totals include all categories and honor account date status and local timezone`() {
         val zone=ZoneId.of("Asia/Ho_Chi_Minh")
