@@ -47,6 +47,8 @@ class FinanceViewModel @Inject constructor(private val repository:FinanceReposit
     fun transfer(from:String,to:String,amount:Long,description:String?,onDone:()->Unit)=mutate(onDone){repository.transfer(from,to,amount,Instant.now(),description)}
     fun addIncome(input:IncomeSourceInput)=mutate{repository.addIncomeSource(input)}
     fun linkIncome(paymentId:String,transactionId:String,amount:Long)=mutate{repository.linkIncomePayment(paymentId,transactionId,amount)}
+    fun saveFixedExpense(id:String?,input:FixedExpenseInput,onDone:()->Unit)=mutate(onDone){repository.saveFixedExpense(id,input)}
+    fun deleteFixedExpense(id:String,onDone:()->Unit)=mutate(onDone){repository.deleteFixedExpense(id)}
     fun addBudget(input:BudgetInput)=mutate{repository.addBudget(input)}
     fun addCategory(input:CategoryInput)=mutate{repository.addCategory(input)}
     fun addAccount(input:AccountInput)=mutate{repository.addAccount(input)}

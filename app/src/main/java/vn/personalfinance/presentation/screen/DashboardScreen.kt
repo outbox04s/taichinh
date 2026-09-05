@@ -61,12 +61,14 @@ fun OverviewScreen(
     onAddTransaction: () -> Unit = {},
     onAllTransactions: () -> Unit = {},
     onAllDebts: () -> Unit = {},
+    onAllCategories: () -> Unit = {},
+    onFixedExpenses: () -> Unit = {},
 ) {
     DashboardBackground {
         when {
             state.loading -> DashboardLoading()
             state.error != null -> DashboardError(state.error, onRetry)
-            else -> DashboardContent(state, onPeriod, onAccount, onCustom, onAddIncome, onSettings, onAddTransaction, onAllTransactions, onAllDebts)
+            else -> DashboardContent(state, onPeriod, onAccount, onCustom, onAddIncome, onSettings, onAddTransaction, onAllTransactions, onAllDebts, onAllCategories, onFixedExpenses)
         }
     }
 }
@@ -92,6 +94,8 @@ fun OverviewScreen(
     onAddTransaction: () -> Unit,
     onAllTransactions: () -> Unit,
     onAllDebts: () -> Unit,
+    onAllCategories: () -> Unit = {},
+    onFixedExpenses: () -> Unit = {},
 ) {
     val range = state.dateRange()
     val transactions = state.snapshot.transactions.filter { (state.accountId == null || it.accountId == state.accountId) && it.deletedAt == null }
@@ -125,9 +129,10 @@ fun OverviewScreen(
         item { MetricGrid(flow.income, flow.expense, flow.net, due30, moneyVisible) }
         item { FinancialHealthCard(risk.level, risk.score, openDebts.sumOf { it.currentPrincipal }, state.snapshot.installments.filter { it.status != "paid" && !it.dueDate.isBefore(today) && !it.dueDate.isAfter(today.plusDays(7)) }.sumOf { it.totalDue - it.paidAmount }, risk.projectedCash30Days, onAllDebts) }
         item { CashFlowCard(transactions, range.first, range.second, flow.income, flow.expense, onAddTransaction) }
-        item { ExpenseCard(transactions, state.snapshot.categories, range.first, range.second, onAllTransactions) }
+        item { ExpenseCard(transactions, state.snapshot.categories, range.first, range.second, onAllCategories) }
         item { RecentTransactionsCard(transactions, state.snapshot, onAllTransactions, onAddTransaction) }
         item { UpcomingDebtsCard(state.snapshot, today, onAllDebts) }
+        item { OutlinedButton(onFixedExpenses, Modifier.fillMaxWidth()) { Text("Chi ph\u00ed c\u1ed1 \u0111\u1ecbnh h\u00e0ng th\u00e1ng") } }
         item { IncomeCard(state.snapshot, { incomeDialog = true }) }
     }
     if (customDates) CustomRangeDialog(state, { customDates = false }) { start, end -> onCustom(start, end); customDates = false }

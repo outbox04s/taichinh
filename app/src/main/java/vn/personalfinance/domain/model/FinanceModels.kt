@@ -22,7 +22,7 @@ data class DebtPaymentAllocation(val id:String,val debtId:String,val installment
 data class DebtReminder(val installmentId:String,val debtName:String,val dueDate:LocalDate,val remainingAmount:Long,val type:String)
 data class IncomeSource(val id: String, val name: String, val type: String, val expectedAmount: Long, val payDay: Int?, val frequency: String, val active: Boolean, val nextExpectedDate: LocalDate?)
 data class IncomePayment(val id: String, val incomeSourceId: String, val expectedDate: LocalDate, val expectedAmount: Long, val transactionId: String?, val actualAmount: Long?)
-data class RecurringEntry(val id:String,val type:TransactionType,val amount:Long,val active:Boolean)
+data class RecurringEntry(val id:String,val type:TransactionType,val amount:Long,val active:Boolean,val title:String="",val accountId:String="",val categoryId:String?=null,val frequency:String="monthly",val startDate:LocalDate=LocalDate.of(1970,1,1),val endDate:LocalDate?=null)
 
 data class FinanceSnapshot(
     val accounts: List<FinancialAccount> = emptyList(), val categories: List<Category> = emptyList(),

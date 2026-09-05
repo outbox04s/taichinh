@@ -17,7 +17,11 @@ data class AppRelease(val versionCode:Long,val versionName:String,val apkUrl:Str
 data class CategoryInput(val name:String,val type:TransactionType)
 data class AccountInput(val displayName:String,val openingBalance:Long,val bankShortName:String,val bankFullName:String,val bankLogo:String?,val accountNumber:String,val purpose:String)
 
+data class FixedExpenseInput(val title:String,val accountId:String,val categoryId:String,val amount:Long,val startDate:LocalDate,val endDate:LocalDate?,val active:Boolean=true)
+
 interface FinanceRepository {
+    suspend fun saveFixedExpense(id:String?,input:FixedExpenseInput):Result<Unit>
+    suspend fun deleteFixedExpense(id:String):Result<Unit>
     val snapshot: StateFlow<FinanceSnapshot>
     suspend fun refresh(): Result<Unit>
     suspend fun addManualTransaction(input: ManualTransactionInput): Result<Unit>

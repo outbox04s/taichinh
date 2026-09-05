@@ -24,8 +24,8 @@ android {
         applicationId = "vn.personalfinance"
         minSdk = 26
         targetSdk = 37
-        versionCode = 21
-        versionName = "0.12.6"
+        versionCode = 22
+        versionName = "0.13.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         buildConfigField("String", "SUPABASE_URL", "\"${config("SUPABASE_URL")}\"")
         buildConfigField("String", "SUPABASE_ANON_KEY", "\"${config("SUPABASE_ANON_KEY")}\"")
