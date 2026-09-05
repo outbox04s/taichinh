@@ -75,6 +75,14 @@ class SupabaseFinanceRepository @Inject constructor(private val client: Supabase
             put("p_transaction_at",at.toString()); description?.let { put("p_description",it) }
         })
     }
+    override suspend fun updateIncomeSource(id:String,input:IncomeSourceInput)=mutate {
+        client.postgrest.rpc("update_income_source",buildJsonObject {
+            put("p_id",id);put("p_name",input.name.trim());put("p_amount",input.expectedAmount)
+            put("p_frequency",input.frequency);put("p_pay_day",input.payDay?.let{kotlinx.serialization.json.JsonPrimitive(it)}?:JsonNull)
+            put("p_next_date",input.nextExpectedDate?.toString()?.let{kotlinx.serialization.json.JsonPrimitive(it)}?:JsonNull)
+        })
+    }
+    override suspend fun deleteIncomeSource(id:String)=mutate { userId();client.from("income_sources").delete{filter{eq("id",id)}} }
     override suspend fun addIncomeSource(input:IncomeSourceInput)=mutate { client.from("income_sources").insert(IncomeInsert(userId(),input.name,input.type,input.expectedAmount,input.payDay,input.frequency,input.nextExpectedDate?.toString())) }
     override suspend fun linkIncomePayment(paymentId:String,transactionId:String,actualAmount:Long)=mutate { client.from("income_payments").update({set("transaction_id",transactionId);set("actual_amount",actualAmount)}){filter{eq("id",paymentId)}} }
     override suspend fun saveFixedExpense(id:String?,input:FixedExpenseInput)=mutate {

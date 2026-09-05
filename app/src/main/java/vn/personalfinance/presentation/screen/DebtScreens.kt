@@ -2,6 +2,8 @@
 package vn.personalfinance.presentation.screen
 
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -32,11 +34,12 @@ import java.time.temporal.ChronoUnit
  val active=state.snapshot.debts.filter{it.status!="paid"};val paid=state.snapshot.debts.filter{it.status=="paid"}
  val monthDue=state.snapshot.installments.filter{!it.dueDate.isBefore(monthStart)&&!it.dueDate.isAfter(monthEnd)}.sumOf{it.totalDue-it.paidAmount}
  val overdue=state.snapshot.installments.filter{it.dueDate<today&&it.paidAmount<it.totalDue}.sumOf{it.totalDue-it.paidAmount}
- val sorted=active.sortedWith(when(state.debtSort){DebtSort.DUE_DATE->compareBy(nullsLast()){it.nextDueDate};DebtSort.BALANCE->compareByDescending{it.currentPrincipal};DebtSort.RISK->compareByDescending<Debt>{d->state.snapshot.installments.count{it.debtId==d.id&&it.dueDate<today&&it.paidAmount<it.totalDue}}.thenBy{it.nextDueDate}})
+ val filtered=if(state.debtSort==DebtSort.DUE_DATE)active.filter{d->vn.personalfinance.domain.debtDueThisMonth(d,state.snapshot.installments,today)} else active
+ val sorted=filtered.sortedWith(when(state.debtSort){DebtSort.ALL->compareBy(nullsLast()){it.nextDueDate};DebtSort.DUE_DATE->compareBy(nullsLast()){it.nextDueDate};DebtSort.BALANCE->compareByDescending{it.currentPrincipal};DebtSort.RISK->compareByDescending<Debt>{d->state.snapshot.installments.count{it.debtId==d.id&&it.dueDate<today&&it.paidAmount<it.totalDue}}.thenBy{it.nextDueDate}})
  ScreenState(state.loading,state.error,false,onRetry){LazyColumn(Modifier.fillMaxSize(),contentPadding=PaddingValues(16.dp,16.dp,16.dp,120.dp),verticalArrangement=Arrangement.spacedBy(12.dp)){
-  item{Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceBetween,verticalAlignment=Alignment.CenterVertically){Text("KHOẢN NỢ",style=MaterialTheme.typography.headlineMedium,fontWeight=FontWeight.Bold,maxLines=1,color=LiquidGlassColors.TextPrimary);GlassPressButton("＋ TẠO",onAdd)};Spacer(Modifier.height(14.dp));DebtMetrics(active.sumOf{it.currentPrincipal},state.snapshot.debts.sumOf{it.originalPrincipal},monthDue,overdue);Spacer(Modifier.height(4.dp));Row(horizontalArrangement=Arrangement.spacedBy(6.dp)){DebtSort.entries.forEach{sort->GlassChip(when(sort){DebtSort.DUE_DATE->"Gần hạn";DebtSort.BALANCE->"Dư nợ";DebtSort.RISK->"Rủi ro"},state.debtSort==sort,{onSort(sort)})}};Text("Đang hoạt động",style=MaterialTheme.typography.titleLarge,fontWeight=FontWeight.Bold,color=LiquidGlassColors.TextPrimary)}
+  item{Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceBetween,verticalAlignment=Alignment.CenterVertically){Text("KHOẢN NỢ",style=MaterialTheme.typography.headlineMedium,fontWeight=FontWeight.Bold,maxLines=1,color=LiquidGlassColors.TextPrimary);GlassPressButton("＋ TẠO",onAdd)};Spacer(Modifier.height(14.dp));DebtMetrics(active.sumOf{it.currentPrincipal},state.snapshot.debts.sumOf{it.originalPrincipal},monthDue,overdue);Spacer(Modifier.height(4.dp));Row(Modifier.horizontalScroll(rememberScrollState()),horizontalArrangement=Arrangement.spacedBy(6.dp)){DebtSort.entries.forEach{sort->GlassChip(when(sort){DebtSort.ALL->"T\u1ea5t c\u1ea3";DebtSort.DUE_DATE->"Gần hạn";DebtSort.BALANCE->"Dư nợ";DebtSort.RISK->"Rủi ro"},state.debtSort==sort,{onSort(sort)})}};Text("Đang hoạt động",style=MaterialTheme.typography.titleLarge,fontWeight=FontWeight.Bold,color=LiquidGlassColors.TextPrimary)}
   if(sorted.isEmpty())item{Text("Không có khoản nợ đang hoạt động")};items(sorted,key={it.id}){debt->DebtCard(debt,state.snapshot.installments.filter{i->i.debtId==debt.id},today,{onOpen(debt.id)}){deleting=debt}}
-  item{Text("Đã tất toán",style=MaterialTheme.typography.titleLarge,fontWeight=FontWeight.Bold)};if(paid.isEmpty())item{Text("Chưa có khoản đã tất toán")};items(paid,key={it.id}){debt->DebtCard(debt,emptyList(),today,{onOpen(debt.id)}){deleting=debt}}
+  if(state.debtSort!=DebtSort.DUE_DATE){item{Text("Đã tất toán",style=MaterialTheme.typography.titleLarge,fontWeight=FontWeight.Bold)};if(paid.isEmpty())item{Text("Chưa có khoản đã tất toán")};items(paid,key={it.id}){debt->DebtCard(debt,emptyList(),today,{onOpen(debt.id)}){deleting=debt}}}
  }}
  deleting?.let{debt->AlertDialog(onDismissRequest={deleting=null},title={Text("Xóa khoản nợ?")},text={Text("${debt.name}, các kỳ hạn và thanh toán liên quan sẽ bị xóa hẳn khỏi database.")},confirmButton={Button({onDelete(debt.id);deleting=null},colors=ButtonDefaults.buttonColors(containerColor=MaterialTheme.colorScheme.error)){Text("XÓA")}},dismissButton={TextButton({deleting=null}){Text("HỦY")}})}
 }

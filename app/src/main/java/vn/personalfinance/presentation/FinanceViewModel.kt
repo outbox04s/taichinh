@@ -19,11 +19,11 @@ import java.time.LocalDate
 import javax.inject.Inject
 
 enum class PeriodFilter { WEEK, MONTH, QUARTER, YEAR, CUSTOM }
-enum class DebtSort { DUE_DATE, BALANCE, RISK }
+enum class DebtSort { ALL, DUE_DATE, BALANCE, RISK }
 data class FinanceUiState(
     val loading:Boolean=true,val saving:Boolean=false,val error:String?=null,val snapshot:FinanceSnapshot=FinanceSnapshot(),
     val period:PeriodFilter=PeriodFilter.MONTH,val customStart:LocalDate?=null,val customEnd:LocalDate?=null,val accountId:String?=null,
-    val search:String="",val transactionType:TransactionType?=null,val source:TransactionSource?=null,val categoryId:String?=null,val debtSort:DebtSort=DebtSort.DUE_DATE,val lastSePaySync:Instant?=null,
+    val search:String="",val transactionType:TransactionType?=null,val source:TransactionSource?=null,val categoryId:String?=null,val debtSort:DebtSort=DebtSort.ALL,val lastSePaySync:Instant?=null,
     val availableUpdate:AppRelease?=null,val updateInstalling:Boolean=false,val updateError:String?=null,
 )
 
@@ -45,6 +45,8 @@ class FinanceViewModel @Inject constructor(private val repository:FinanceReposit
     fun editTransaction(id:String,edits:TransactionEdits)=mutate{repository.updateTransaction(id,edits)}
     fun deleteTransaction(id:String)=mutate{repository.deleteTransaction(id)}
     fun transfer(from:String,to:String,amount:Long,description:String?,onDone:()->Unit)=mutate(onDone){repository.transfer(from,to,amount,Instant.now(),description)}
+    fun saveIncome(id:String?,input:IncomeSourceInput,onDone:()->Unit)=mutate(onDone){if(id==null)repository.addIncomeSource(input) else repository.updateIncomeSource(id,input)}
+    fun deleteIncome(id:String,onDone:()->Unit)=mutate(onDone){repository.deleteIncomeSource(id)}
     fun addIncome(input:IncomeSourceInput)=mutate{repository.addIncomeSource(input)}
     fun linkIncome(paymentId:String,transactionId:String,amount:Long)=mutate{repository.linkIncomePayment(paymentId,transactionId,amount)}
     fun saveFixedExpense(id:String?,input:FixedExpenseInput,onDone:()->Unit)=mutate(onDone){repository.saveFixedExpense(id,input)}

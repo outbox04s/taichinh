@@ -63,12 +63,13 @@ fun OverviewScreen(
     onAllDebts: () -> Unit = {},
     onAllCategories: () -> Unit = {},
     onFixedExpenses: () -> Unit = {},
+    onManageIncome: () -> Unit = {},
 ) {
     DashboardBackground {
         when {
             state.loading -> DashboardLoading()
             state.error != null -> DashboardError(state.error, onRetry)
-            else -> DashboardContent(state, onPeriod, onAccount, onCustom, onAddIncome, onSettings, onAddTransaction, onAllTransactions, onAllDebts, onAllCategories, onFixedExpenses)
+            else -> DashboardContent(state, onPeriod, onAccount, onCustom, onAddIncome, onSettings, onAddTransaction, onAllTransactions, onAllDebts, onAllCategories, onFixedExpenses, onManageIncome)
         }
     }
 }
@@ -96,6 +97,7 @@ fun OverviewScreen(
     onAllDebts: () -> Unit,
     onAllCategories: () -> Unit = {},
     onFixedExpenses: () -> Unit = {},
+    onManageIncome: () -> Unit = {},
 ) {
     val range = state.dateRange()
     val transactions = state.snapshot.transactions.filter { (state.accountId == null || it.accountId == state.accountId) && it.deletedAt == null }
@@ -133,7 +135,7 @@ fun OverviewScreen(
         item { RecentTransactionsCard(transactions, state.snapshot, onAllTransactions, onAddTransaction) }
         item { UpcomingDebtsCard(state.snapshot, today, onAllDebts) }
         item { OutlinedButton(onFixedExpenses, Modifier.fillMaxWidth()) { Text("Chi ph\u00ed c\u1ed1 \u0111\u1ecbnh h\u00e0ng th\u00e1ng") } }
-        item { IncomeCard(state.snapshot, { incomeDialog = true }) }
+        item { IncomeSummary(state.snapshot, onManageIncome) }
     }
     if (customDates) CustomRangeDialog(state, { customDates = false }) { start, end -> onCustom(start, end); customDates = false }
     if (incomeDialog) AddIncomeDialog({ incomeDialog = false }) { onAddIncome(it); incomeDialog = false }

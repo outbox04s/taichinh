@@ -22,7 +22,7 @@ import vn.personalfinance.presentation.components.glass.GlassCard
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
-@Composable fun ReportsScreen(state:FinanceUiState,onRetry:()->Unit,onFixed:()->Unit,onCategories:()->Unit,onAddIncome:(IncomeSourceInput)->Unit,onLinkIncome:(String,String,Long)->Unit) {
+@Composable fun ReportsScreen(state:FinanceUiState,onRetry:()->Unit,onFixed:()->Unit,onCategories:()->Unit,onAddIncome:(IncomeSourceInput)->Unit,onLinkIncome:(String,String,Long)->Unit,onManageIncome:()->Unit) {
     LaunchedEffect(Unit) { onRetry() }
     ScreenState(state.loading,state.error,false,onRetry) {
         val plans=ReportCalculator.forecast(state.snapshot,LocalDate.now(VietnamZone))
@@ -44,7 +44,7 @@ import java.time.format.DateTimeFormatter
                 if(state.snapshot.incomeSources.none{it.active})Text("Chưa thiết lập nguồn thu nhập. Thêm nguồn thu tại Tổng quan để dự toán đầy đủ.")
                 if(state.snapshot.debts.any{d->d.status!="paid" && state.snapshot.installments.none{it.debtId==d.id}})Text("Có khoản vay chưa có lịch trả: dự toán có thể thiếu nghĩa vụ trả nợ.")
             } }
-            item { IncomeSourcesCard(state.snapshot,onAddIncome,onLinkIncome) }
+            item { IncomeSummary(state.snapshot,onManageIncome) }
             items(plans,key={it.month.toString()}){plan->GlassCard {
                 Text(plan.month.format(DateTimeFormatter.ofPattern("MM/yyyy")),style=MaterialTheme.typography.titleLarge,fontWeight=FontWeight.Bold)
                 ReportAmount(if(plan==plans.firstOrNull())"Tài sản khả dụng hiện có" else "Số dư chuyển từ tháng trước",plan.openingBalance)

@@ -28,6 +28,8 @@ interface FinanceRepository {
     suspend fun updateTransaction(id: String, edits: TransactionEdits): Result<Unit>
     suspend fun deleteTransaction(id: String): Result<Unit>
     suspend fun transfer(fromAccountId: String, toAccountId: String, amount: Long, at: Instant, description: String?): Result<Unit>
+    suspend fun updateIncomeSource(id:String,input:IncomeSourceInput):Result<Unit>
+    suspend fun deleteIncomeSource(id:String):Result<Unit>
     suspend fun addIncomeSource(input: IncomeSourceInput): Result<Unit>
     suspend fun linkIncomePayment(paymentId:String,transactionId:String,actualAmount:Long):Result<Unit>
     suspend fun addBudget(input: BudgetInput): Result<Unit>
